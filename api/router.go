@@ -3,7 +3,10 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-explorer/config"
+	"github.com/gnasnik/titan-explorer/docs"
 	logging "github.com/ipfs/go-log/v2"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 var log = logging.Logger("api")
@@ -19,6 +22,11 @@ func ConfigRouter(router *gin.Engine, cfg config.Config) {
 	if err != nil {
 		log.Fatalf("authMiddleware.MiddlewareInit: %v", err)
 	}
+
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Title = "Titan Explorer Backend API"
+	docs.SwaggerInfo.Version = "1.0"
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	apiV1.POST("/login", authMiddleware.LoginHandler)
 	apiV1.POST("/logout", authMiddleware.LogoutHandler)

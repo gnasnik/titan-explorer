@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+// DeviceBindingHandler is a function to binding device
+//
+//	@Summary		设备绑定
+//	@Tags			控制台
+//	@Description	DeviceBindingHandler is a function to create an application for activation code
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			user_id		query		string	true	"用户ID"
+//	@Success		200			{object}	JsonObject{}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/device_binding [get]
 func DeviceBindingHandler(c *gin.Context) {
 	deviceInfo := &model.DeviceInfo{}
 	deviceInfo.DeviceID = c.Query("device_id")

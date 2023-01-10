@@ -18,3 +18,8 @@ gen:
 
 build: titan-explorer
 .PHONY: build
+
+
+gen-swag:
+	swag init
+.PHONY: gen-swag	
