@@ -135,7 +135,7 @@ func queryDeviceStatisticHourly(deviceID, start, end string) []*dao.DeviceStatis
 		EndTime:   end,
 	}
 	if option.StartTime == "" {
-		option.StartTime = carbon.Now().SubHours(24).String()
+		option.StartTime = carbon.Now().StartOfHour().SubHours(25).String()
 	}
 	if option.EndTime == "" {
 		option.EndTime = carbon.Now().String()

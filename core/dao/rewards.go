@@ -59,13 +59,27 @@ func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour,
 	sqlClause := fmt.Sprintf(`select date_format(time, '%%Y-%%m-%%d %%H') as date, avg(nat_ratio) as nat_ratio, 
 	avg(disk_usage) as disk_usage, avg(latency) as latency, avg(pkg_loss_ratio) as pkg_loss_ratio, 
 	min(online_time) as online_time,
-	max(hour_income) as income,
-	max(upstream_traffic) as upstream_traffic,
-	max(downstream_traffic) as downstream_traffic,
-	max(retrieval_count) as retrieval_count
-	from device_info_hour where device_id='%s' and time>='%s' and time<='%s' group by date order by date`, cond.DeviceID, option.StartTime, option.EndTime)
+	min(hour_income) as income,
+	min(upstream_traffic) as upstream_traffic, 
+	min(downstream_traffic) as downstream_traffic,
+	min(retrieval_count) as retrieval_count
+	from %s where device_id='%s' and time>='%s' and time<='%s' group by date order by date`, tableNameDeviceInfoHour, cond.DeviceID, option.StartTime, option.EndTime)
 	var out []*DeviceStatistics
 	err := DB.SelectContext(ctx, &out, sqlClause)
+	if err != nil {
+		return nil, err
+	}
+
+	var maxOne DeviceStatistics
+	query := fmt.Sprintf(`SELECT 
+		max(online_time) as online_time,
+		max(hour_income) as income,
+		max(upstream_traffic) as upstream_traffic, 
+		max(downstream_traffic) as downstream_traffic,
+		max(retrieval_count) as retrieval_count 
+		FROM %s WHERE device_id='%s' AND time>='%s' AND time<='%s'`,
+		tableNameDeviceInfoHour, cond.DeviceID, option.StartTime, option.EndTime)
+	err = DB.GetContext(ctx, &maxOne, query)
 	if err != nil {
 		return nil, err
 	}
@@ -74,18 +88,20 @@ func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour,
 		return out, nil
 	}
 
-	lastOnlineTime := out[0].OnlineTime
-	lastIncome := out[0].Income
-	lastUpstreamTraffic := out[0].UpstreamTraffic
-	lastDownstreamTraffic := out[0].DownstreamTraffic
-	lastRetrievalCount := out[0].RetrievalCount
+	end := len(out) - 1
+	out[end].OnlineTime = maxOne.OnlineTime - out[end].OnlineTime
+	out[end].Income = maxOne.Income - out[end].Income
+	out[end].UpstreamTraffic = maxOne.UpstreamTraffic - out[end].UpstreamTraffic
+	out[end].DownstreamTraffic = maxOne.DownstreamTraffic - out[end].DownstreamTraffic
+	out[end].RetrievalCount = maxOne.RetrievalCount - out[end].RetrievalCount
 
-	for i := 1; i < len(out); i++ {
-		out[i].OnlineTime, lastOnlineTime = out[i].OnlineTime-lastOnlineTime, out[i].OnlineTime
-		out[i].Income, lastIncome = out[i].Income-lastIncome, out[i].Income
-		out[i].UpstreamTraffic, lastUpstreamTraffic = out[i].UpstreamTraffic-lastUpstreamTraffic, out[i].UpstreamTraffic
-		out[i].DownstreamTraffic, lastDownstreamTraffic = out[i].DownstreamTraffic-lastDownstreamTraffic, out[i].DownstreamTraffic
-		out[i].RetrievalCount, lastRetrievalCount = out[i].RetrievalCount-lastRetrievalCount, out[i].RetrievalCount
+	prevOne := *out[0]
+	for i := 1; i < end; i++ {
+		out[i].OnlineTime, prevOne.OnlineTime = out[i].OnlineTime-prevOne.OnlineTime, out[i].OnlineTime
+		out[i].Income, prevOne.Income = out[i].Income-prevOne.Income, out[i].Income
+		out[i].UpstreamTraffic, prevOne.UpstreamTraffic = out[i].UpstreamTraffic-prevOne.UpstreamTraffic, out[i].UpstreamTraffic
+		out[i].DownstreamTraffic, prevOne.DownstreamTraffic = out[i].DownstreamTraffic-prevOne.DownstreamTraffic, out[i].DownstreamTraffic
+		out[i].RetrievalCount, prevOne.RetrievalCount = out[i].RetrievalCount-prevOne.RetrievalCount, out[i].RetrievalCount
 	}
 
 	return handleHourList(out[1:]), err
@@ -147,8 +163,9 @@ func handleDailyList(start, end string, in []*DeviceStatistics) []*DeviceStatist
 
 func handleHourList(in []*DeviceStatistics) []*DeviceStatistics {
 	var oneHour = time.Hour
-	startTime := time.Now().Add(-23 * oneHour)
-	endTime := time.Now()
+	now := time.Now()
+	startTime := now.Add(-23 * oneHour)
+	endTime := now
 	dataKye := make(map[string]*DeviceStatistics)
 	var out []*DeviceStatistics
 	for _, data := range in {
@@ -156,20 +173,20 @@ func handleHourList(in []*DeviceStatistics) []*DeviceStatistics {
 	}
 	for startTime.Before(endTime) || startTime.Equal(endTime) {
 		key := startTime.Format(utils.TimeFormatYMDH)
-		startTime = startTime.Add(oneHour)
 		val, ok := dataKye[key]
 		var dataL DeviceStatistics
 		if !ok {
 			dataL.Date = startTime.Format(utils.TimeFormatH) + ":00"
 			out = append(out, &dataL)
+			startTime = startTime.Add(oneHour)
 			continue
 		}
 		val.Date = startTime.Format(utils.TimeFormatH) + ":00"
 		out = append(out, val)
+		startTime = startTime.Add(oneHour)
 	}
 
 	return out
-
 }
 
 func GetUserIncome(ctx context.Context, cond *model.DeviceInfo, option QueryOption) (map[string]map[string]interface{}, error) {
