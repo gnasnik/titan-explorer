@@ -14,6 +14,16 @@ import (
 	"time"
 )
 
+// GetAllAreas is a function to get a slice of record(s) from device info table in database
+//
+//	@Summary		获取所有的地区列表
+//	@Tags			矿工页
+//	@Description	GetAllAreas is a handler to get a slice of record(s)from device info table in database
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		string
+//	@Failure		400	{object}	errors.GenericError
+//	@Router			/all_areas [get]
 func GetAllAreas(c *gin.Context) {
 	areas, err := dao.GetAllAreaFromDeviceInfo(c.Request.Context())
 	if err != nil {
@@ -26,6 +36,17 @@ func GetAllAreas(c *gin.Context) {
 	}))
 }
 
+// GetIndexInfoHandler is a function to get a single record from the full node info table in the redis
+//
+//	@Summary		获取数据总览数据
+//	@Tags			首页
+//
+//	@Description	GetIndexInfoHandler is a function to get a single record from the full node info table in the redis
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	model.FullNodeInfo
+//	@Failure		400	{object}	errors.GenericError
+//	@Router			/get_index_info [get]
 func GetIndexInfoHandler(c *gin.Context) {
 	fullNodeInfo, err := dao.GetCacheFullNodeInfo(c.Request.Context())
 	if err != nil {
@@ -36,7 +57,17 @@ func GetIndexInfoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, respJSON(fullNodeInfo))
 }
 
-// GetUserDeviceProfileHandler devices overview
+// GetUserDeviceProfileHandler is a function to get user devices overview
+//
+//	@Summary		用户总览
+//	@Tags			控制台
+//	@Description	DeviceBindingHandler is a function to get user devices overview
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		string	true	"用户ID"
+//	@Success		200		{object}	JsonObject{profile=dao.UserDeviceProfile,series_data=[]dao.DeviceStatistics}
+//	@Failure		400		{object}	errors.GenericError
+//	@Router			/get_user_device_profile [get]
 func GetUserDeviceProfileHandler(c *gin.Context) {
 	info := &model.DeviceInfo{}
 	info.UserID = c.Query("user_id")
@@ -154,6 +185,24 @@ func queryDeviceStatisticHourly(deviceID, start, end string) []*dao.DeviceStatis
 	return list
 }
 
+// GetDeviceInfoHandler is a function to get a slice of record(s) from device info table in database
+//
+//	@Summary		获取矿工页列表
+//	@Tags			矿工页
+//	@Description	GetDeviceInfoHandler is a handler to get a slice of record(s) from device info table in database
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id		query		string	false	"用户ID"
+//	@Param			device_id	query		string	false	"设备ID"
+//	@Param			ip_location	query		int		false	"国家地区"
+//	@Param			node_type	query		int		false	"节点类型，默认全部"
+//	@Param			page		query		int		false	"分页页码，默认 1"
+//	@Param			page_size	query		int		false	"分页页数 默认 50"
+//	@Param			order		query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field	query		string	false	"排序字段"
+//	@Success		200			{object}	JsonObject{list=[]model.DeviceInfo}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_device_info [get]
 func GetDeviceInfoHandler(c *gin.Context) {
 	info := &model.DeviceInfo{}
 	info.UserID = c.Query("user_id")
@@ -185,6 +234,27 @@ func GetDeviceInfoHandler(c *gin.Context) {
 	}))
 }
 
+type MapReturnForSwag struct {
+	Name string
+	Value []float64
+}
+
+// GetMapInfoHandler is a function to get a slice of record(s) from devices map
+//
+//	@Summary		获取地图信息接口
+//	@Tags			首页
+//	@Description	GetMapInfoHandler is a function to get a slice of record(s) from devices map
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id		query		string	true	"设备ID"
+//	@Param			device_status	query		string	false	"状态"
+//	@Param			page			query		string	false	"页码"
+//	@Param			page_size		query		string	false	"页数"
+//	@Param			order			query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field		query		string	false	"排序字段"
+//	@Success		200				{object}	JsonObject{list=[]MapReturnForSwag, total=number}
+//	@Failure		400				{object}	errors.GenericError
+//	@Router			/get_map_info [get]
 func GetMapInfoHandler(c *gin.Context) {
 	info := &model.DeviceInfo{}
 	info.UserID = c.Query("user_id")
@@ -215,6 +285,19 @@ func GetMapInfoHandler(c *gin.Context) {
 	}))
 }
 
+// GetDeviceDiagnosisDailyHandler is a function to get a slice of record(s) from device info daily diagnosis
+//
+//	@Summary		获取历史数据诊断
+//	@Tags			矿工页
+//	@Description	GetDeviceDiagnosisDailyHandler is a function to get a slice of record(s) from device info daily diagnosis
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			from		query		string	false	"开始时间"
+//	@Param			to			query		string	false	"结束时间"
+//	@Success		200			{object}	JsonObject{series_data=dao.DeviceStatistics}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_diagnosis_days [get]
 func GetDeviceDiagnosisDailyHandler(c *gin.Context) {
 	from := c.Query("from")
 	to := c.Query("to")
@@ -225,6 +308,19 @@ func GetDeviceDiagnosisDailyHandler(c *gin.Context) {
 	}))
 }
 
+// GetDeviceDiagnosisHourHandler is a function to get a slice of record(s) from device info hourly diagnosis
+//
+//	@Summary		获取实时监控
+//	@Tags			矿工页
+//	@Description	GetDeviceDiagnosisHourHandler is a function to get a slice of record(s) from device info hourly diagnosis
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			from		query		string	false	"开始时间"
+//	@Param			to			query		string	false	"结束时间"
+//	@Success		200			{object}	JsonObject{series_data=dao.DeviceStatistics}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_diagnosis_hours [get]
 func GetDeviceDiagnosisHourHandler(c *gin.Context) {
 	deviceID := c.Query("device_id")
 	//date := c.Query("date")

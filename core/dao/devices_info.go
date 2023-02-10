@@ -176,16 +176,26 @@ func SumFullNodeInfoFromDeviceInfo(ctx context.Context) (*model.FullNodeInfo, er
 }
 
 type UserDeviceProfile struct {
-	CumulativeProfit float64 `json:"cumulative_profit" db:"cumulative_profit"`
-	YesterdayProfit  float64 `json:"yesterday_profit" db:"yesterday_profit"`
-	TodayProfit      float64 `json:"today_profit" db:"today_profit"`
-	SevenDaysProfit  float64 `json:"seven_days_profit" db:"seven_days_profit"`
-	MonthProfit      float64 `json:"month_profit" db:"month_profit"`
-	TotalNum         int64   `json:"total_num" db:"total_num"`
-	OnlineNum        int64   `json:"online_num" db:"online_num"`
-	OfflineNum       int64   `json:"offline_num" db:"offline_num"`
-	AbnormalNum      int64   `json:"abnormal_num" db:"abnormal_num"`
-	TotalBandwidth   float64 `json:"total_bandwidth" db:"total_bandwidth"`
+	// 累计收益
+	CumulativeProfit float64 `json:"cumulative_profit" db:"cumulative_profit" swaggertype:"number"`
+	// 昨日收益
+	YesterdayProfit float64 `json:"yesterday_profit" db:"yesterday_profit" swaggertype:"number"`
+	// 今日收益
+	TodayProfit float64 `json:"today_profit" db:"today_profit"  swaggertype:"number"`
+	// 近7天收益
+	SevenDaysProfit float64 `json:"seven_days_profit" db:"seven_days_profit"  swaggertype:"number"`
+	// 近30天收益
+	MonthProfit float64 `json:"month_profit" db:"month_profit"  swaggertype:"number"`
+	// 设备总数
+	TotalNum int64 `json:"total_num" db:"total_num"  swaggertype:"integer"`
+	// 在线设备数
+	OnlineNum int64 `json:"online_num" db:"online_num"  swaggertype:"integer"`
+	// 设备离线
+	OfflineNum int64 `json:"offline_num" db:"offline_num"  swaggertype:"integer"`
+	// 设备异常
+	AbnormalNum int64 `json:"abnormal_num" db:"abnormal_num"  swaggertype:"integer"`
+	// 总上行速度
+	TotalBandwidth float64 `json:"total_bandwidth" db:"total_bandwidth"  swaggertype:"number"`
 }
 
 func CountUserDeviceInfo(ctx context.Context, userID string) (*UserDeviceProfile, error) {

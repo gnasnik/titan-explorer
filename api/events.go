@@ -9,6 +9,21 @@ import (
 	"strconv"
 )
 
+// GetCacheListHandler is a function to get a slice of record(s) from CacheEvent table in database
+//
+//	@Summary		获取设备的缓存列表
+//	@Tags			矿工页
+//	@Description	GetDeviceInfoHandler is a handler to get a slice of record(s) from CacheEvent table in database
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			page		query		int		false	"分页页码，默认 1"
+//	@Param			page_size	query		int		false	"分页页数 默认 50"
+//	@Param			order		query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field	query		string	false	"排序字段"
+//	@Success		200			{object}	JsonObject{list=[]model.CacheEvent}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_cache_list [get]
 func GetCacheListHandler(c *gin.Context) {
 	info := &model.CacheEvent{
 		DeviceID: c.Query("device_id"),
@@ -37,6 +52,21 @@ func GetCacheListHandler(c *gin.Context) {
 	}))
 }
 
+// GetRetrievalListHandler is a function to get a slice of record(s) from RetrievalEvent table in database
+//
+//	@Summary		获取检索数据列表
+//	@Tags			矿工页
+//	@Description	GetRetrievalListHandler is a handler to get a slice of record(s) from RetrievalEvent table in database
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			page		query		int		false	"分页页码，默认 1"
+//	@Param			page_size	query		int		false	"分页页数 默认 50"
+//	@Param			order		query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field	query		string	false	"排序字段"
+//	@Success		200			{object}	JsonObject{list=[]model.RetrievalEvent}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_retrieval_list [get]
 func GetRetrievalListHandler(c *gin.Context) {
 	info := &model.RetrievalEvent{
 		DeviceID: c.Query("device_id"),
@@ -65,6 +95,21 @@ func GetRetrievalListHandler(c *gin.Context) {
 	}))
 }
 
+// GetValidationListHandler is a function to get a slice of record(s) from ValidationEvent table in database
+//
+//	@Summary		获取验证数据列表
+//	@Tags			矿工页
+//	@Description	GetValidationListHandler is a handler to get a slice of record(s) from ValidationEvent table in database
+//	@Accept			json
+//	@Produce		json
+//	@Param			device_id	query		string	true	"设备ID"
+//	@Param			page		query		int		false	"分页页码，默认 1"
+//	@Param			page_size	query		int		false	"分页页数 默认 50"
+//	@Param			order		query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field	query		string	false	"排序字段"
+//	@Success		200			{object}	JsonObject{list=[]model.ValidationEvent}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_validation_list [get]
 func GetValidationListHandler(c *gin.Context) {
 	info := &model.ValidationEvent{
 		DeviceID: c.Query("device_id"),

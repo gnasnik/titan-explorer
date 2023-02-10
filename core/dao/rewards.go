@@ -43,16 +43,26 @@ func BulkUpsertDeviceInfoDaily(ctx context.Context, dailyInfos []*model.DeviceIn
 }
 
 type DeviceStatistics struct {
-	Date              string  `json:"date" db:"date"`
-	NatRatio          float64 `json:"nat_ratio" db:"nat_ratio"`
-	DiskUsage         float64 `json:"disk_usage" db:"disk_usage"`
-	Latency           float64 `json:"latency" db:"latency"`
-	PkgLossRatio      float64 `json:"pkg_loss_ratio" db:"pkg_loss_ratio"`
-	Income            float64 `json:"income" db:"income"`
-	OnlineTime        float64 `json:"online_time" db:"online_time"`
-	UpstreamTraffic   float64 `json:"upstream_traffic" db:"upstream_traffic"`
+	// 日期
+	Date string `json:"date" db:"date"`
+	// NAT率
+	NatRatio float64 `json:"nat_ratio" db:"nat_ratio"`
+	// 磁盘使用率
+	DiskUsage float64 `json:"disk_usage" db:"disk_usage"`
+	// 时延
+	Latency float64 `json:"latency" db:"latency"`
+	// 丢包率
+	PkgLossRatio float64 `json:"pkg_loss_ratio" db:"pkg_loss_ratio"`
+	// 收益
+	Income float64 `json:"income" db:"income"`
+	// 在线时长
+	OnlineTime float64 `json:"online_time" db:"online_time"`
+	// 上行流量
+	UpstreamTraffic float64 `json:"upstream_traffic" db:"upstream_traffic"`
+	// 下行流量
 	DownstreamTraffic float64 `json:"downstream_traffic" db:"downstream_traffic"`
-	RetrievalCount    float64 `json:"retrieval_count" db:"retrieval_count"`
+	// 检索数量
+	RetrievalCount float64 `json:"retrieval_count" db:"retrieval_count"`
 }
 
 func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour, option QueryOption) ([]*DeviceStatistics, error) {

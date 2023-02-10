@@ -12,6 +12,17 @@ import (
 	"time"
 )
 
+// CreateApplicationHandler is a function to create an application for activation code
+//
+//	@Summary		申请激活码
+//	@Tags			申请激活码
+//	@Description	GetDeviceInfoHandler is a function to create an application for activation code
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		model.Application	true	"请求参数"
+//	@Success		200		{object}	JsonObject{}
+//	@Failure		400		{object}	errors.GenericError
+//	@Router			/create_application [post]
 func CreateApplicationHandler(c *gin.Context) {
 	params := model.Application{}
 	if err := c.BindJSON(&params); err != nil {
@@ -48,6 +59,21 @@ func CreateApplicationHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, respJSON(nil))
 }
 
+// GetApplicationsHandler is a function to get a slice of record(s) from application table in database
+//
+//	@Summary		获取申请激活码记录
+//	@Tags			申请激活码
+//	@Description	GetApplicationsHandler is a function to get a slice of record(s) from application table in database
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id		query		string	true	"用户ID"
+//	@Param			page		query		int		false	"分页页码，默认 1"
+//	@Param			page_size	query		int		false	"分页页数 默认 50"
+//	@Param			order		query		string	false	"排序， Enums(ASC, DESC)"
+//	@Param			order_field	query		string	false	"排序字段"
+//	@Success		200			{object}	JsonObject{list=[]model.Application}
+//	@Failure		400			{object}	errors.GenericError
+//	@Router			/get_applications [get]
 func GetApplicationsHandler(c *gin.Context) {
 	userID := c.Query("user_id")
 	pageSize, _ := strconv.Atoi(c.Query("page_size"))
