@@ -12,6 +12,7 @@ type Application struct {
 	ID                int64     `db:"id" json:"id"`
 	UserID            string    `db:"user_id" json:"user_id"`
 	Email             string    `db:"email" json:"email"`
+	AreaID            string    `db:"area_id" json:"area_id"`
 	IpCountry         string    `db:"ip_country" json:"ip_country"`
 	IpCity            string    `db:"ip_city" json:"ip_city"`
 	NodeType          int32     `db:"node_type" json:"node_type"`
