@@ -69,16 +69,17 @@ func (s *Statistic) SumDeviceInfoDaily() error {
 	}()
 
 	startOfTodayTime := carbon.Now().StartOfDay().String()
-	endOfTodayTime := carbon.Now().EndOfDay().String()
+	endOfTodayTime := carbon.Now().Tomorrow().StartOfDay().String()
 	sqlClause := fmt.Sprintf(`select user_id, device_id, date_format(time, '%%Y-%%m-%%d') as date, 
 			avg(nat_ratio) as nat_ratio, avg(disk_usage) as disk_usage, avg(latency) as latency, 
-			avg(pkg_loss_ratio) as pkg_loss_ratio, max(hour_income) - min(hour_income) as hour_income,
+			avg(pkg_loss_ratio) as pkg_loss_ratio, 
+			max(hour_income) - min(hour_income) as hour_income,
 			max(online_time) - min(online_time) as online_time,
 			max(upstream_traffic) - min(upstream_traffic) as upstream_traffic,
 			max(downstream_traffic) - min(downstream_traffic) as downstream_traffic,
 			max(retrieval_count) - min(retrieval_count) as retrieval_count,
 			max(block_count) - min(block_count) as block_count  from device_info_hour                                                                                      
-			where time>='%s' and time<='%s' group by date, device_id`, startOfTodayTime, endOfTodayTime)
+			where time>='%s' and time<='%s' group by device_id`, startOfTodayTime, endOfTodayTime)
 	datas, err := dao.GetQueryDataList(sqlClause)
 	if err != nil {
 		return err

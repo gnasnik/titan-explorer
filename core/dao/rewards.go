@@ -145,16 +145,17 @@ func handleDailyList(start, end string, in []*DeviceStatistics) []*DeviceStatist
 	}
 	for startTime.Before(endTime) || startTime.Equal(endTime) {
 		key := startTime.Format(utils.TimeFormatYMD)
-		startTime = startTime.Add(oneDay)
 		val, ok := dataKye[key]
 		var dataL DeviceStatistics
 		if !ok {
 			dataL.Date = startTime.Format(utils.TimeFormatMD)
 			out = append(out, &dataL)
+			startTime = startTime.Add(oneDay)
 			continue
 		}
 		val.Date = startTime.Format(utils.TimeFormatMD)
 		out = append(out, val)
+		startTime = startTime.Add(oneDay)
 	}
 
 	return out
