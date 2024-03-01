@@ -94,6 +94,7 @@ type DeviceInfo struct {
 	UploadTraffic    float64   `db:"upload_traffic" json:"upload_traffic"`
 	CacheCount       int64     `db:"cache_count" json:"cache_count"`
 	RetrievalCount   int64     `db:"retrieval_count" json:"retrieval_count"`
+	NATType   		 string    `db:"nat_type" json:"nat_type"`
 	CreatedAt        time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt        time.Time `db:"updated_at" json:"updated_at"`
 	DeletedAt        time.Time `db:"deleted_at" json:"deleted_at"`

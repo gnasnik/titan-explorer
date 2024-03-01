@@ -150,6 +150,7 @@ func ToDeviceInfo(ctx context.Context, node types.NodeInfo) *model.DeviceInfo {
 		NodeType:         int64(node.Type),
 		CacheCount:       node.AssetCount,
 		RetrievalCount:   node.RetrieveCount,
+		NATType:          node.NATType,
 		UpdatedAt:        node.LastSeen,
 		BoundAt:          node.FirstTime,
 	}

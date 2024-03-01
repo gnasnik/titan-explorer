@@ -25,3 +25,6 @@ create table epoch_info(
 `created_at` DATETIME(3) NOT NULL DEFAULT 0,
 `updated_at` DATETIME(3) NOT NULL DEFAULT 0,
 )
+
+
+ALTER  TABLE  device_info ADD COLUMN nat_type VARCHAR(128) NOT NULL DEFAULT '' AFTER retrieval_count;
