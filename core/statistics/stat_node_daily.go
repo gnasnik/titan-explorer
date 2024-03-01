@@ -224,14 +224,14 @@ func updateDeviceInfoForTimeRange(updatedDevices map[string]*model.DeviceInfo, s
 		for _, field := range profitFields {
 			switch field {
 			case "YesterdayProfit":
-				device.YesterdayProfit = formatter.Str2Float64(d["income"])
+				updatedDevices[deviceID].YesterdayProfit = formatter.Str2Float64(d["income"])
 			case "SevenDaysProfit":
-				device.SevenDaysProfit = formatter.Str2Float64(d["income"])
+				updatedDevices[deviceID].SevenDaysProfit = formatter.Str2Float64(d["income"])
 			case "MonthProfit":
-				device.MonthProfit = formatter.Str2Float64(d["income"])
+				updatedDevices[deviceID].MonthProfit = formatter.Str2Float64(d["income"])
 			case "TodayProfit":
-				device.TodayProfit = formatter.Str2Float64(d["income"])
-				device.TodayOnlineTime = formatter.Str2Float64(d["online_time"])
+				updatedDevices[deviceID].TodayProfit = formatter.Str2Float64(d["income"])
+				updatedDevices[deviceID].TodayOnlineTime = formatter.Str2Float64(d["online_time"])
 			}
 		}
 	}
