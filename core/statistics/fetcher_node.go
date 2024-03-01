@@ -73,7 +73,7 @@ loop:
 			continue
 		}
 
-		nodeInfo := toDeviceInfo(ctx, node)
+		nodeInfo := ToDeviceInfo(ctx, node)
 		if nodeInfo.DeviceStatus == DeviceStatusOffline {
 			// just update device status
 			err = dao.UpdateDeviceStatus(ctx, nodeInfo)
@@ -125,7 +125,7 @@ loop:
 	return nil
 }
 
-func toDeviceInfo(ctx context.Context, node types.NodeInfo) *model.DeviceInfo {
+func ToDeviceInfo(ctx context.Context, node types.NodeInfo) *model.DeviceInfo {
 	deviceInfo := model.DeviceInfo{
 		DeviceID:         node.NodeID,
 		DeviceName:       node.NodeName,

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Filecoin-Titan/titan/api/client"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-explorer/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/gnasnik/titan-explorer/core/errors"
 	"github.com/gnasnik/titan-explorer/core/filecoin"
 	"github.com/gnasnik/titan-explorer/core/generated/model"
+	"github.com/gnasnik/titan-explorer/core/statistics"
 	"github.com/gnasnik/titan-explorer/pkg/formatter"
 	"github.com/go-redis/redis/v9"
 	"github.com/golang-module/carbon/v2"
@@ -667,6 +669,32 @@ func GetDiskDaysHandler(c *gin.Context) {
 	}))
 }
 
+func getNodeInfoFromScheduler(ctx context.Context, id string) (*model.DeviceInfo, error) {
+	schedulers, err := GetSchedulerConfigs(ctx, fmt.Sprintf("%s::%s", SchedulerConfigKeyPrefix, "*"))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, scheduler := range schedulers {
+		SchedulerURL := strings.Replace(scheduler.SchedulerURL, "https", "http", 1)
+		headers := http.Header{}
+		headers.Add("Authorization", "Bearer "+scheduler.AccessToken)
+		schedulerClient, _, err := client.NewScheduler(ctx, SchedulerURL, headers)
+		if err != nil {
+			log.Errorf("create scheduler rpc client: %v", err)
+			return nil, err
+		}
+		nodeInfo, err := schedulerClient.GetNodeInfo(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		return statistics.ToDeviceInfo(ctx, nodeInfo), nil
+	}
+
+	return nil, fmt.Errorf("node %s not found", id)
+}
+
 func GetDeviceProfileHandler(c *gin.Context) {
 	type getEarningReq struct {
 		NodeID string   `json:"node_id"`
@@ -698,8 +726,19 @@ func GetDeviceProfileHandler(c *gin.Context) {
 
 	deviceInfo, err := dao.GetDeviceInfo(c.Request.Context(), param.NodeID)
 	if err == dao.ErrNoRow {
-		c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
-		return
+
+		device, err := getNodeInfoFromScheduler(c.Request.Context(), param.NodeID)
+		if err != nil {
+			log.Errorf("getNodeInfoFromScheduler", err)
+			c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
+			return
+		}
+
+		deviceInfo = device
+		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
+		if err != nil {
+			log.Errorf("BulkAddDeviceInfo %v", err)
+		}
 	}
 
 	if err != nil {
