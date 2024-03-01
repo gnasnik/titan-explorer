@@ -73,17 +73,22 @@ func jwtGinMiddleware(secretKey string) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
-			var loginParams login
-			if err := c.BindJSON(&loginParams); err != nil {
-				log.Errorf("login bindjson: %v", err)
-			}
-
-			if loginParams == (login{}) {
-				loginParams = login{
-					Username:   c.Query("username"),
-					VerifyCode: c.Query("verify_code"),
-					Password:   c.Query("password"),
-				}
+			//var loginParams login
+			//if err := c.BindJSON(&loginParams); err != nil {
+			//	log.Errorf("login bindjson: %v", err)
+			//}
+			//
+			//if loginParams == (login{}) {
+			//	loginParams = login{
+			//		Username:   c.Query("username"),
+			//		VerifyCode: c.Query("verify_code"),
+			//		Password:   c.Query("password"),
+			//	}
+			//}
+			loginParams := login{
+				Username:   c.Query("username"),
+				VerifyCode: c.Query("verify_code"),
+				Password:   c.Query("password"),
 			}
 
 			signature := c.Query("sign")
