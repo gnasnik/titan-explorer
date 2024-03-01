@@ -740,7 +740,7 @@ func GetDeviceProfileHandler(c *gin.Context) {
 
 		device, err := getNodeInfoFromScheduler(c.Request.Context(), param.NodeID)
 		if err != nil {
-			log.Errorf("getNodeInfoFromScheduler", err)
+			log.Errorf("getNodeInfoFromScheduler %v", err)
 			c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
 			return
 		}
@@ -748,7 +748,7 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		deviceInfo = device
 		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
 		if err != nil {
-			log.Errorf("BulkAddDeviceInfo", err)
+			log.Errorf("BulkAddDeviceInfo %v", err)
 		}
 	}
 
@@ -776,23 +776,14 @@ func GetDeviceProfileHandler(c *gin.Context) {
 				"today": deviceInfo.TodayProfit,
 				"total": deviceInfo.CumulativeProfit,
 			}
-		case "online":
-			response[key] = map[string]interface{}{
-				"today": deviceInfo.TodayOnlineTime,
-				"total": deviceInfo.OnlineTime,
-			}
-		case "day_incomes":
-			response[key] = queryHourlyIncome(c.Request.Context(), param.NodeID)
 		case "month_incomes":
 			response[key] = queryDailyIncome(c.Request.Context(), param.NodeID)
 		}
 	}
 
-	if param.Since > 0 {
-		response, err = filterResponse(c.Request.Context(), param.NodeID, response)
-		if err != nil {
-			log.Errorf("filter response: %v", err)
-		}
+	response, err = filterResponse(c.Request.Context(), param.NodeID, response)
+	if err != nil {
+		log.Errorf("filter response: %v", err)
 	}
 
 	for key, val := range response {
