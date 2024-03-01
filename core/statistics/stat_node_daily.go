@@ -20,7 +20,11 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 		log.Infof("fetch device info hours done, cost: %v", time.Since(start))
 	}()
 
-	var upsertDevice []*model.DeviceInfoHour
+	var (
+		upsertDevice       []*model.DeviceInfoHour
+		initialFixedRecord []*model.DeviceInfoHour
+	)
+
 	for _, device := range deviceInfo {
 		var deviceInfoHour model.DeviceInfoHour
 		if device.UserID == "" {
@@ -45,8 +49,25 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 		deviceInfoHour.OnlineTime = device.OnlineTime
 		deviceInfoHour.CreatedAt = time.Now()
 		deviceInfoHour.UpdatedAt = time.Now()
+
+		// fixed start record profit greater than 0
+		if device.OnlineTime <= 5 && device.CumulativeProfit > 0 {
+			fixedDeviceHour := deviceInfoHour
+			fixedDeviceHour.HourIncome = 0
+			fixedDeviceHour.OnlineTime = 0
+			if start.Minute() == 0 {
+				fixedDeviceHour.Time = start.Add(1 * time.Minute)
+			} else {
+				fixedDeviceHour.Time = start.Add(-1 * time.Minute)
+			}
+			initialFixedRecord = append(initialFixedRecord, &fixedDeviceHour)
+		}
+
 		upsertDevice = append(upsertDevice, &deviceInfoHour)
 	}
+
+	upsertDevice = append(initialFixedRecord, upsertDevice...)
+
 	err := dao.BulkUpsertDeviceInfoHours(ctx, upsertDevice)
 	if err != nil {
 		log.Errorf("bulk upsert device info: %v", err)
