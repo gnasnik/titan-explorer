@@ -737,7 +737,7 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		deviceInfo = device
 		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
 		if err != nil {
-			log.Errorf("BulkAddDeviceInfo %v", err)
+			log.Errorf("BulkAddDeviceInfo", err)
 		}
 	}
 
