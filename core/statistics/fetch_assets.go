@@ -72,15 +72,19 @@ Loop:
 		return nil
 	}
 
-	asserts, err := toAssets(assertsRes.ReplicaEvents)
+	assets, err := toAssets(assertsRes.ReplicaEvents)
 	if err != nil {
 		log.Errorf("toAssets: %v", err)
 		return err
 	}
 
-	err = dao.AddAssets(ctx, asserts)
+	if len(assets) == 0 {
+		return nil
+	}
+
+	err = dao.AddAssets(ctx, assets)
 	if err != nil {
-		log.Errorf("create user info hour: %v", err)
+		log.Errorf("create user assets: %v", err)
 	}
 
 	if assertsRes.Total > offset {
