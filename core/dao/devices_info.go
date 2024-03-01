@@ -202,26 +202,26 @@ func TranslateIPLocation(ctx context.Context, info *model.DeviceInfo, lang model
 		return
 	}
 
-	parts := strings.Split(info.IpLocation, "-")
-	if len(parts) < 3 {
-		return
-	}
-
-	var args []interface{}
-	for _, part := range parts {
-		args = append(args, part)
-	}
-
-	if args[len(args)-1] == "Unknown" {
-		args[len(args)-1] = args[len(args)-2]
-	}
+	//parts := strings.Split(info.IpLocation, "-")
+	//if len(parts) < 3 {
+	//	return
+	//}
+	//
+	//var args []interface{}
+	//for _, part := range parts {
+	//	args = append(args, part)
+	//}
+	//
+	//if args[len(args)-1] == "Unknown" {
+	//	args[len(args)-1] = args[len(args)-2]
+	//}
 
 	locationEnTable := fmt.Sprintf("%s_%s", tableNameLocation, model.LanguageEN)
 	locationCnTable := fmt.Sprintf("%s_%s", tableNameLocation, lang)
-	query := fmt.Sprintf(`select lc.* from %s lc join %s le on lc.zip_code = le.zip_code where le.continent = ? and le.country = ? and le.province = ? and le.city = ? limit 1`, locationCnTable, locationEnTable)
+	query := fmt.Sprintf(`select lc.* from %s lc join %s le on lc.ip = le.ip where le.ip = ? limit 1`, locationCnTable, locationEnTable)
 
 	var location model.Location
-	err := DB.QueryRowxContext(ctx, query, args...).StructScan(&location)
+	err := DB.QueryRowxContext(ctx, query, info.ExternalIp).StructScan(&location)
 	if err != nil {
 		log.Errorf("query location %s: %v", locationCnTable, err)
 		return
