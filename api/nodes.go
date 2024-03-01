@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Filecoin-Titan/titan/api/client"
+	"github.com/Filecoin-Titan/titan/api/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-explorer/config"
@@ -670,12 +671,22 @@ func GetDiskDaysHandler(c *gin.Context) {
 }
 
 func getNodeInfoFromScheduler(ctx context.Context, id string) (*model.DeviceInfo, error) {
-	schedulers, err := GetSchedulerConfigs(ctx, fmt.Sprintf("%s::%s", SchedulerConfigKeyPrefix, "*"))
+	keyPrefix := fmt.Sprintf("%s::%s", SchedulerConfigKeyPrefix, "*")
+	result, err := dao.RedisCache.Keys(ctx, keyPrefix).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, scheduler := range schedulers {
+	var configs []*types.SchedulerCfg
+	for _, key := range result {
+		schedulers, err := GetSchedulerConfigs(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, schedulers...)
+	}
+
+	for _, scheduler := range configs {
 		SchedulerURL := strings.Replace(scheduler.SchedulerURL, "https", "http", 1)
 		headers := http.Header{}
 		headers.Add("Authorization", "Bearer "+scheduler.AccessToken)
