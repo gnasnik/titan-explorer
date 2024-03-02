@@ -583,7 +583,7 @@ func GetIdIfExist(ctx context.Context, nodeId string) bool {
 }
 
 func SumUserDeviceReward(ctx context.Context) (map[string]int64, error) {
-	query := fmt.Sprintf(`select user_id, sum(today_profit) as income from %s where  user_id <> '' and today_profit > 0 GROUP BY user_id;`, tableNameDeviceInfo)
+	query := fmt.Sprintf(`select user_id, sum(cumulative_profit) as income from %s where  user_id <> '' and today_profit > 0 GROUP BY user_id;`, tableNameDeviceInfo)
 
 	out := make(map[string]int64)
 	rows, err := DB.QueryxContext(ctx, query)
