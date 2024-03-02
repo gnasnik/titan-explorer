@@ -220,6 +220,8 @@ type FullNodeInfo struct {
 	TNextElectionHigh        int64     `db:"t_next_election_high" json:"t_next_election_high"`
 	Time                     time.Time `db:"time" json:"time"`
 	CPUCores            	 int64     `db:"cpu_cores" json:"cpu_cores"`
+	Memory  				 int64     `db:"memory" json:"memory"`
+	IPCount       			 int64     `db:"ip_count" json:"ip_count"`
 	CreatedAt                time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt                time.Time `db:"updated_at" json:"updated_at"`
 }
