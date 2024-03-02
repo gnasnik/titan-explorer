@@ -37,5 +37,6 @@ ALTER TABLE full_node_info ADD COLUMN  online_candidate_count bigint(20) NOT NUL
 ALTER TABLE full_node_info ADD COLUMN  online_edge_count bigint(20) NOT NULL DEFAULT 0 AFTER edge_count;
 ALTER TABLE full_node_info ADD COLUMN  memory bigint(20) NOT NULL DEFAULT 0 AFTER edge_count;
 ALTER TABLE full_node_info ADD COLUMN  ip_count bigint(20) NOT NULL DEFAULT 0 AFTER memory;
+ALTER TABLE full_node_info ADD COLUMN  cpu_cores bigint(20) NOT NULL DEFAULT 0 AFTER memory;
 
 ALTER  TABLE  device_info ADD COLUMN income_incr FLOAT(32) NOT NULL DEFAULT 0 AFTER retrieval_count;

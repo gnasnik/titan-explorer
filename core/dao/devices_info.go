@@ -259,6 +259,7 @@ func HandleMapInfo(infos []*model.DeviceInfo, lang model.Language) []map[string]
 		}
 
 		TranslateIPLocation(context.Background(), info, lang)
+		maskDeviceIPAddress(info)
 
 		out = append(out, map[string]interface{}{
 			"name":     info.City,
@@ -270,6 +271,18 @@ func HandleMapInfo(infos []*model.DeviceInfo, lang model.Language) []map[string]
 	}
 	return out
 
+}
+
+func maskDeviceIPAddress(deviceInfo *model.DeviceInfo) *model.DeviceInfo {
+	eIp := strings.Split(deviceInfo.ExternalIp, ".")
+	if len(eIp) > 3 {
+		deviceInfo.ExternalIp = eIp[0] + "." + "xxx" + "." + "xxx" + "." + eIp[3]
+	}
+	iIp := strings.Split(deviceInfo.InternalIp, ".")
+	if len(iIp) > 3 {
+		deviceInfo.InternalIp = iIp[0] + "." + "xxx" + "." + "xxx" + "." + iIp[3]
+	}
+	return deviceInfo
 }
 
 func GetDeviceInfoByID(ctx context.Context, deviceID string) (*model.DeviceInfo, error) {

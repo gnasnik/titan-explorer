@@ -326,6 +326,11 @@ func DeviceBindingHandler(c *gin.Context) {
 	}
 
 	deviceInfo, err := dao.GetDeviceInfo(c.Request.Context(), params.NodeId)
+
+	if err == dao.ErrNoRow {
+
+	}
+
 	if err != nil {
 		log.Errorf("get device info: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))

@@ -314,9 +314,8 @@ func GetQueryInfoHandler(c *gin.Context) {
 		log.Errorf("get device by user id info list: %v", err)
 	}
 
-	maskIPAddress(deviceInfos)
-
 	if total > 0 {
+		maskIPAddress(deviceInfos)
 		c.JSON(http.StatusOK, respJSON(JsonObject{
 			"list":  deviceInfos,
 			"total": total,
@@ -340,6 +339,8 @@ func GetQueryInfoHandler(c *gin.Context) {
 	for _, deviceInfo := range deviceInfos {
 		dao.TranslateIPLocation(c.Request.Context(), deviceInfo, lang)
 	}
+
+	maskIPAddress(deviceInfos)
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"list":  deviceInfos,
@@ -580,10 +581,12 @@ func GetMapInfoHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"list":  dao.HandleMapInfo(maskIPAddress(deviceInfos), lang),
+		"list":  dao.HandleMapInfo(deviceInfos, lang),
 		"total": total,
 	}))
 }
+
+//maskIPAddress(deviceInfos)
 
 func GetDeviceDiagnosisDailyByDeviceIdHandler(c *gin.Context) {
 	from := c.Query("from")
