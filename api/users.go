@@ -326,16 +326,32 @@ func DeviceBindingHandler(c *gin.Context) {
 	}
 
 	deviceInfo, err := dao.GetDeviceInfo(c.Request.Context(), params.NodeId)
-
 	if err == dao.ErrNoRow {
 
+		device, err := getNodeInfoFromScheduler(c.Request.Context(), params.NodeId)
+		if err != nil {
+			log.Errorf("getNodeInfoFromScheduler %v", err)
+			c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
+			return
+		}
+
+		deviceInfo = device
+		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
+		if err != nil {
+			log.Errorf("BulkAddDeviceInfo %v", err)
+		}
 	}
 
-	if err != nil {
-		log.Errorf("get device info: %v", err)
+	if deviceInfo == nil {
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
 		return
 	}
+
+	//if err != nil {
+	//	log.Errorf("get device info: %v", err)
+	//	c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	//	return
+	//}
 
 	if deviceInfo.UserID != "" {
 		c.JSON(http.StatusOK, respErrorCode(errors.DeviceBound, c))
