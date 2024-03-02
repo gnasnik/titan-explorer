@@ -202,19 +202,9 @@ func TranslateIPLocation(ctx context.Context, info *model.DeviceInfo, lang model
 		return
 	}
 
-	//parts := strings.Split(info.IpLocation, "-")
-	//if len(parts) < 3 {
-	//	return
-	//}
-	//
-	//var args []interface{}
-	//for _, part := range parts {
-	//	args = append(args, part)
-	//}
-	//
-	//if args[len(args)-1] == "Unknown" {
-	//	args[len(args)-1] = args[len(args)-2]
-	//}
+	if info.ExternalIp == "" {
+		return
+	}
 
 	locationEnTable := fmt.Sprintf("%s_%s", tableNameLocation, model.LanguageEN)
 	locationCnTable := fmt.Sprintf("%s_%s", tableNameLocation, lang)
@@ -223,7 +213,7 @@ func TranslateIPLocation(ctx context.Context, info *model.DeviceInfo, lang model
 	var location model.Location
 	err := DB.QueryRowxContext(ctx, query, info.ExternalIp).StructScan(&location)
 	if err != nil {
-		log.Errorf("query location %s: %v", locationCnTable, err)
+		log.Errorf("query %s location %s: %v", info.ExternalIp, locationCnTable, err)
 		return
 	}
 
@@ -391,7 +381,7 @@ func upsertDeviceInfoStatement() string {
 					:cumulative_profit, :bandwidth_up, :bandwidth_down,:download_traffic,:upload_traffic, now(), now(),:bound_at,:cache_count,:retrieval_count, :nat_type, :income_incr
 				)`, tableNameDeviceInfo,
 	)
-	updateStatement := ` ON DUPLICATE KEY UPDATE node_type = VALUES(node_type),  device_name = VALUES(device_name),active_status = VALUES(active_status),
+	updateStatement := ` ON DUPLICATE KEY UPDATE node_type = VALUES(node_type), active_status = VALUES(active_status),
 				system_version = VALUES(system_version), network_info = VALUES(network_info), cumulative_profit = VALUES(cumulative_profit), 
 				external_ip = VALUES(external_ip), internal_ip = VALUES(internal_ip), ip_location = VALUES(ip_location), ip_country = VALUES(ip_country), 
 				ip_province = VALUES(ip_province), ip_city = VALUES(ip_city),latitude = VALUES(latitude), longitude = VALUES(longitude), mac_location = VALUES(mac_location),
