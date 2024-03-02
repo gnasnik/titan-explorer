@@ -19,14 +19,15 @@ const (
 
 func UpsertFullNodeInfo(ctx context.Context, fullNodeInfo *model.FullNodeInfo) error {
 	_, err := DB.NamedExecContext(ctx, fmt.Sprintf(
-		`INSERT INTO %s (t_node_online_ratio, t_average_replica, t_upstream_file_count, validator_count, candidate_count, edge_count, total_storage,storage_used, total_upstream_bandwidth, 
-                total_downstream_bandwidth, total_carfile, total_carfile_size, retrieval_count, total_node_count,online_node_count, next_election_time,  f_backups_from_titan,
+		`INSERT INTO %s (t_node_online_ratio, t_average_replica, t_upstream_file_count, validator_count, online_validator_count, candidate_count, online_candidate_count, edge_count, online_edge_count, total_storage,storage_used, total_upstream_bandwidth, 
+                total_downstream_bandwidth, total_carfile, total_carfile_size, retrieval_count, total_node_count,online_node_count, next_election_time,  f_backups_from_titan, cpu_cores,
                 time, created_at) 
-		VALUES (:t_node_online_ratio, :t_average_replica, :t_upstream_file_count, :validator_count, :candidate_count, :edge_count, :total_storage, :storage_used, :total_upstream_bandwidth, :total_downstream_bandwidth,
-		 :total_carfile, :total_carfile_size, :retrieval_count, :total_node_count, :online_node_count, :next_election_time, :f_backups_from_titan, :time, :created_at) 
-		 ON DUPLICATE KEY UPDATE t_node_online_ratio = VALUES(t_node_online_ratio), t_average_replica = VALUES(t_average_replica), t_upstream_file_count = VALUES(t_upstream_file_count), validator_count = VALUES(validator_count), candidate_count = VALUES(candidate_count),
+		VALUES (:t_node_online_ratio, :t_average_replica, :t_upstream_file_count, :validator_count, :online_validator_count, :candidate_count, :online_candidate_count, :edge_count, :online_edge_count, :total_storage, :storage_used, :total_upstream_bandwidth, :total_downstream_bandwidth,
+		 :total_carfile, :total_carfile_size, :retrieval_count, :total_node_count, :online_node_count, :next_election_time, :f_backups_from_titan, :cpu_cores, :time, :created_at) 
+		 ON DUPLICATE KEY UPDATE t_node_online_ratio = VALUES(t_node_online_ratio), t_average_replica = VALUES(t_average_replica), t_upstream_file_count = VALUES(t_upstream_file_count), validator_count = VALUES(validator_count), 
+		online_validator_count = VALUES(online_validator_count), candidate_count = VALUES(candidate_count), online_candidate_count = VALUES(online_candidate_count),  online_edge_count = VALUES(online_edge_count),
 		edge_count = VALUES(edge_count), total_storage = VALUES(total_storage), storage_used = VALUES(storage_used), total_upstream_bandwidth = VALUES(total_upstream_bandwidth),
-		total_downstream_bandwidth = VALUES(total_downstream_bandwidth), total_carfile = VALUES(total_carfile), f_backups_from_titan=VALUES(f_backups_from_titan),
+		total_downstream_bandwidth = VALUES(total_downstream_bandwidth), total_carfile = VALUES(total_carfile), f_backups_from_titan=VALUES(f_backups_from_titan), cpu_cores = VALUES(cpu_cores),
 		total_carfile_size = VALUES(total_carfile_size), retrieval_count = VALUES(retrieval_count), total_node_count = VALUES(total_node_count), online_node_count = VALUES(online_node_count)`, tableNameFullNodeInfo),
 		fullNodeInfo)
 	return err
@@ -96,9 +97,11 @@ type FullNodeDaysInfo struct {
 	Date                     string  `json:"date" db:"date"`
 	TotalNodeCount           int64   `db:"total_node_count" json:"total_node_count"`
 	OnlineNodeCount          int64   `db:"online_node_count" json:"online_node_count"`
-	FNodeCount               int64   `db:"f_node_count" json:"f_node_count"`
-	VCCount                  int64   `db:"VC_count" json:"VC_count"`
-	EdgeCount                int64   `db:"edge_count" json:"edge_count"`
+	SPNodeCount              int64   `db:"sp_node_count" json:"sp_node_count"`
+	L1NodeCount              int64   `db:"l1_count" json:"l1_count"`
+	OnlineL1NodeCount        int64   `db:"online_l1_count" json:"online_l1_count"`
+	L2NodeCount              int64   `db:"l2_count" json:"l2_count"`
+	OnlineL2NodeCount        int64   `db:"online_l2_count" json:"online_l2_count"`
 	TUpstreamFileCount       int64   `db:"t_upstream_file_count" json:"t_upstream_file_count"`
 	TotalStorage             float64 `db:"total_storage" json:"total_storage"`
 	StorageUsed              float64 `db:"storage_used" json:"storage_used"`
@@ -118,8 +121,15 @@ func QueryNodesDailyInfo(startTime, endTime string) []*FullNodeDaysInfo {
 
 func GetNodesDaysList(ctx context.Context, option QueryOption) ([]*FullNodeDaysInfo, error) {
 	sqlClause := fmt.Sprintf(`select date_format(time, '%%Y-%%m-%%d') as date, 
-	total_node_count,online_node_count,total_upstream_bandwidth,total_downstream_bandwidth,total_storage,storage_used,t_upstream_file_count,
-	edge_count,(validator_count+candidate_count) as VC_count,f_node_count from %s where time>='%s' and time<='%s' group by date order by date ASC`, tableNameFullNodeInfo, option.StartTime, option.EndTime)
+	total_node_count, 
+	online_node_count, 
+	(validator_count+candidate_count) as l1_count,
+	(online_validator_count+online_candidate_count) as online_l1_count,
+	edge_count as l2_count,  
+	online_edge_count as online_l2_count,  
+	f_node_count as sp_node_count,
+	total_upstream_bandwidth, total_downstream_bandwidth, total_storage,storage_used, t_upstream_file_count
+ 	from %s where time>='%s' and time<='%s' group by date order by date ASC`, tableNameFullNodeInfo, option.StartTime, option.EndTime)
 	var out []*FullNodeDaysInfo
 	err := DB.SelectContext(ctx, &out, sqlClause)
 	if err != nil {

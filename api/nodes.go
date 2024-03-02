@@ -763,10 +763,8 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		switch key {
 		case "epoch":
 			out[key] = struct {
-				//Network string `json:""`
 				Token string `json:"token"`
 			}{
-				//Network: "huygens",
 				Token: "TTN0",
 			}
 		case "account":

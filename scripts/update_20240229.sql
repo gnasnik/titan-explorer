@@ -28,3 +28,7 @@ create table epoch_info(
 
 
 ALTER  TABLE  device_info ADD COLUMN nat_type VARCHAR(128) NOT NULL DEFAULT '' AFTER retrieval_count;
+
+ALTER TABLE full_node_info ADD COLUMN  online_validator_count bigint(20) NOT NULL DEFAULT 0 AFTER validator_count;
+ALTER TABLE full_node_info ADD COLUMN  online_candidate_count bigint(20) NOT NULL DEFAULT 0 AFTER candidate_count;
+ALTER TABLE full_node_info ADD COLUMN  online_edge_count bigint(20) NOT NULL DEFAULT 0 AFTER edge_count;

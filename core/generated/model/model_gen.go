@@ -200,8 +200,11 @@ type FullNodeInfo struct {
 	TAverageReplica          float64   `db:"t_average_replica" json:"t_average_replica"`
 	FBackupsFromTitan        float64   `db:"f_backups_from_titan" json:"f_backups_from_titan"`
 	ValidatorCount           int32     `db:"validator_count" json:"validator_count"`
+	OnlineValidateorCount    int32     `db:"online_validator_count" json:"online_validator_count"`
 	CandidateCount           int32     `db:"candidate_count" json:"candidate_count"`
+	OnlineCandidateCount     int32     `db:"online_candidate_count" json:"online_candidate_count"`
 	EdgeCount                int32     `db:"edge_count" json:"edge_count"`
+	OnlineEdgeCount          int32     `db:"online_edge_count" json:"online_edge_count"`
 	TotalStorage             float64   `db:"total_storage" json:"total_storage"`
 	StorageUsed              float64   `db:"storage_used" json:"storage_used"`
 	StorageLeft              float64   `db:"storage_left" json:"storage_left"`
@@ -216,6 +219,7 @@ type FullNodeInfo struct {
 	FHigh                    int64     `db:"f_high" json:"f_high"`
 	TNextElectionHigh        int64     `db:"t_next_election_high" json:"t_next_election_high"`
 	Time                     time.Time `db:"time" json:"time"`
+	CPUCores            	 int64     `db:"cpu_cores" json:"cpu_cores"`
 	CreatedAt                time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt                time.Time `db:"updated_at" json:"updated_at"`
 }

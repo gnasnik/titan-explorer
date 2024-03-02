@@ -412,12 +412,23 @@ func GetAllAreaFromDeviceInfo(ctx context.Context) ([]string, error) {
 }
 
 func SumFullNodeInfoFromDeviceInfo(ctx context.Context) (*model.FullNodeInfo, error) {
-	queryStatement := fmt.Sprintf(`SELECT count( device_id ) AS total_node_count ,  SUM(IF(node_type = 1, 1, 0)) AS edge_count, 
-       SUM(IF(node_type = 2, 1, 0)) AS candidate_count,sum(cache_count) as t_upstream_file_count,
+	queryStatement := fmt.Sprintf(`
+	SELECT count( device_id ) AS total_node_count ,  
+			 SUM(IF(node_type = 1, 1, 0)) AS edge_count, 
+			 SUM(IF(node_type = 1 AND device_status_code = 1, 1, 0)) AS online_edge_count, 
+			 SUM(IF(node_type = 2 AND device_status_code = 1, 1, 0)) AS online_candidate_count, 
+			 SUM(IF(node_type = 3 AND device_status_code = 1, 1, 0)) AS online_validator_count, 
+       SUM(IF(node_type = 2, 1, 0)) AS candidate_count,
+			 SUM(cache_count) as t_upstream_file_count,
        count(device_status = 'online' or null) as online_node_count,
-       SUM(IF(node_type = 3, 1, 0)) AS validator_count, ROUND(count(device_status = 'online' or null)/count( device_id )*100,2) AS t_node_online_ratio,
-       ROUND(SUM( disk_space),4) AS total_storage, ROUND(SUM( disk_usage*disk_space/100),4) AS storage_used, 
-       ROUND(SUM(bandwidth_up),2) AS total_upstream_bandwidth, ROUND(SUM(bandwidth_down),2) AS total_downstream_bandwidth FROM %s where active_status = 1;`, tableNameDeviceInfo)
+       SUM(IF(node_type = 3, 1, 0)) AS validator_count, 
+			 ROUND(count(device_status = 'online' or null)/count( device_id )*100,2) AS t_node_online_ratio,
+       ROUND(SUM( disk_space),4) AS total_storage, 
+			 ROUND(SUM( disk_usage*disk_space/100),4) AS storage_used, 
+       ROUND(SUM(bandwidth_up),2) AS total_upstream_bandwidth, 
+			 ROUND(SUM(bandwidth_down),2) AS total_downstream_bandwidth,
+			 SUM(cpu_cores) as cpu_cores
+		FROM %s where active_status = 1;`, tableNameDeviceInfo)
 
 	var out model.FullNodeInfo
 	if err := DB.QueryRowxContext(ctx, queryStatement).StructScan(&out); err != nil {
