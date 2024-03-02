@@ -105,7 +105,7 @@ func (s *Statistic) runFetchers() error {
 		s.SumDeviceInfoProfit,
 		s.SumAllNodes,
 		s.UpdateDeviceRank,
-		s.ClaimUserEarning,
+		//s.ClaimUserEarning,
 	})
 
 	return nil

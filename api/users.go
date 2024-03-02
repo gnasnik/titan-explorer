@@ -43,6 +43,17 @@ func GetUserInfoHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, respErrorCode(errors.UserNotFound, c))
 		return
 	}
+	counter, err := dao.CountUserDeviceInfo(c.Request.Context(), username)
+	if err != nil {
+		//c.JSON(http.StatusOK, respErrorCode(errors.UserNotFound, c))
+		//return
+		log.Errorf("CountUserDeviceInfo %s: %v", username, err)
+	}
+
+	if counter != nil {
+		user.Reward = int64(counter.CumulativeProfit)
+	}
+
 	c.JSON(http.StatusOK, respJSON(user))
 }
 
