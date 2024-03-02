@@ -752,7 +752,7 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		}
 	}
 
-	if err != nil {
+	if deviceInfo == nil {
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
 		return
 	}
