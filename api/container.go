@@ -120,7 +120,7 @@ func GetDeploymentsHandler(c *gin.Context) {
 	//	CreatedTime string  `json:"created_time"`
 	//}
 	//
-	//out := make([]result, 0)
+	//out := make([]ctypes.GetDeploymentListResp, 0)
 	//
 	//for _, deployment := range resp.Deployments {
 	//	for _, service := range deployment.Services {
@@ -344,6 +344,106 @@ func GetDeploymentDomainHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"domains": out,
 	}))
+}
+
+func AddDeploymentDomainHandler(c *gin.Context) {
+	url := config.Cfg.ContainerManager.Addr
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	type domainReq struct {
+		ID   ctypes.DeploymentID
+		Host string
+		Key  string
+		Cert string
+	}
+
+	var params domainReq
+	if err := c.BindJSON(&params); err != nil {
+		log.Errorf("%v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
+		return
+	}
+
+	dparam := ctypes.GetDeploymentOption{
+		Owner:        username,
+		DeploymentID: ctypes.DeploymentID(params.ID),
+	}
+
+	resp, err := getDeploymentsJsonRPC(url, dparam)
+	if err != nil {
+		log.Errorf("get providers: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	if len(resp.Deployments) == 0 {
+		c.JSON(http.StatusOK, respErrorCode(errors.NotFound, c))
+		return
+	}
+
+	if resp.Deployments[0].Owner != username {
+		c.JSON(http.StatusOK, respErrorCode(errors.PermissonNotAllowed, c))
+		return
+	}
+	//
+	//host := strings.Trim(params.Host, "https://")
+	//host = strings.Trim(host, "http://")
+
+	cert := &ctypes.Certificate{
+		Host: params.Host,
+		Key:  []byte(params.Key),
+		Cert: []byte(params.Cert),
+	}
+
+	err = addDeploymentDomainJsonRPC(url, params.ID, cert)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		log.Errorf("add domains: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+func DeleteDeploymentDomainHandler(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	url := config.Cfg.ContainerManager.Addr
+	deploymentId := c.Query("id")
+	host := c.Query("host")
+
+	dparam := ctypes.GetDeploymentOption{
+		Owner:        username,
+		DeploymentID: ctypes.DeploymentID(deploymentId),
+	}
+
+	resp, err := getDeploymentsJsonRPC(url, dparam)
+	if err != nil {
+		log.Errorf("get providers: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	if len(resp.Deployments) == 0 {
+		c.JSON(http.StatusOK, respErrorCode(errors.NotFound, c))
+		return
+	}
+
+	if resp.Deployments[0].Owner != username {
+		c.JSON(http.StatusOK, respErrorCode(errors.PermissonNotAllowed, c))
+		return
+	}
+
+	err = deleteDeploymentDomainJsonRPC(url, ctypes.DeploymentID(deploymentId), host)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		log.Errorf("delete domains: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
 }
 
 func GetDeploymentShellHandler(c *gin.Context) {
@@ -652,6 +752,70 @@ func getDeploymentDomainJsonRPC(url string, id ctypes.DeploymentID) ([]*ctypes.D
 	}
 
 	return domains, nil
+}
+
+func addDeploymentDomainJsonRPC(url string, id ctypes.DeploymentID, cert *ctypes.Certificate) error {
+	params, err := json.Marshal([]interface{}{id, cert})
+	if err != nil {
+		return err
+	}
+
+	req := model.LotusRequest{
+		Jsonrpc: "2.0",
+		Method:  "titan.AddDeploymentDomain",
+		Params:  params,
+		ID:      1,
+	}
+
+	rsp, err := requestJsonRPC(url, req)
+	if err != nil {
+		return err
+	}
+
+	var domains []*ctypes.DeploymentDomain
+	b, err := json.Marshal(rsp.Result)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(b, &domains)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deleteDeploymentDomainJsonRPC(url string, id ctypes.DeploymentID, host string) error {
+	params, err := json.Marshal([]interface{}{id, host})
+	if err != nil {
+		return err
+	}
+
+	req := model.LotusRequest{
+		Jsonrpc: "2.0",
+		Method:  "titan.DeleteDeploymentDomain",
+		Params:  params,
+		ID:      1,
+	}
+
+	rsp, err := requestJsonRPC(url, req)
+	if err != nil {
+		return err
+	}
+
+	var domains []*ctypes.DeploymentDomain
+	b, err := json.Marshal(rsp.Result)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(b, &domains)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getDeploymentShellJsonRPC(url string, id ctypes.DeploymentID) (*ctypes.ShellEndpoint, error) {

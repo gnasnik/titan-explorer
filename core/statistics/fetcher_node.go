@@ -5,18 +5,16 @@ import (
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/gnasnik/titan-explorer/core/geo"
 	"github.com/gnasnik/titan-explorer/pkg/formatter"
-	"github.com/gnasnik/titan-explorer/pkg/iptool"
 	"github.com/oschwald/geoip2-golang"
 	"net"
 	"strconv"
 	"time"
 
-	"github.com/gnasnik/titan-explorer/config"
 	"github.com/gnasnik/titan-explorer/core/dao"
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 )
 
-const maxPageSize = 100
+const maxPageSize = 500
 
 const (
 	DeviceStatusOffline  = "offline"
@@ -182,7 +180,7 @@ func applyLocationInfo(deviceInfo *model.DeviceInfo) {
 	//var loc model.Location
 	//err := GetIpLocation(context.Background(), deviceInfo.ExternalIp, &loc, model.LanguageCN, model.LanguageEN)
 	loc, err := geo.GetIpLocation(context.Background(), deviceInfo.ExternalIp, model.LanguageEN)
-	if err != nil {
+	if err != nil || loc == nil {
 		log.Errorf("%v", err)
 		applyLocationFromLocalGEODB(deviceInfo)
 		return
@@ -193,13 +191,6 @@ func applyLocationInfo(deviceInfo *model.DeviceInfo) {
 	deviceInfo.IpCountry = loc.Country
 	deviceInfo.IpCity = loc.City
 	deviceInfo.IpLocation = dao.ContactIPLocation(*loc, model.LanguageEN)
-
-	//continent := loc.Continent
-	//deviceInfo.IpLocation = continent + "-" + deviceInfo.IpCountry + "-" + deviceInfo.IpProvince
-	//if deviceInfo.IpCity != "" {
-	//	deviceInfo.IpLocation += "-" + deviceInfo.IpCity
-	//}
-
 	deviceInfo.Longitude, _ = strconv.ParseFloat(loc.Longitude, 64)
 	deviceInfo.Latitude, _ = strconv.ParseFloat(loc.Latitude, 64)
 }
@@ -240,36 +231,6 @@ func applyLocationFromLocalGEODB(deviceInfo *model.DeviceInfo) {
 	deviceInfo.Latitude = record.Location.Latitude
 
 	return
-}
-
-func GetIpLocation(ctx context.Context, ip string, Loc *model.Location, languages ...model.Language) error {
-	// get info from databases
-	err := dao.GetLocationInfoByIp(ctx, ip, Loc, model.LanguageEN)
-	if err != nil {
-		return err
-	}
-	if Loc.Ip != "" {
-		return nil
-	}
-
-	if len(languages) == 0 {
-		languages = model.SupportLanguages
-	}
-
-	for _, l := range languages {
-		loc, err := iptool.IPDataCloudGetLocation(ctx, config.Cfg.IpDataCloud.Url, ip, config.Cfg.IpDataCloud.Key, string(l))
-		if err != nil {
-			log.Errorf("iptablecloud get location: %v", err)
-			continue
-		}
-		if err := dao.UpsertLocationInfo(ctx, loc, l); err != nil {
-			continue
-		}
-
-		*Loc = *loc
-	}
-
-	return nil
 }
 
 var _ Fetcher = &NodeFetcher{}

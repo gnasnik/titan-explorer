@@ -37,6 +37,7 @@ const (
 	DeviceBound
 	InvalidCode
 	TimeoutCode
+	PermissonNotAllowed
 
 	InvalidMinerID = iota + 2000
 	InvalidAddress
@@ -107,6 +108,7 @@ var ErrMap = map[int]string{
 	DeviceBound:                              "device already bound: 设备已经绑定",
 	InvalidCode:                              "invalid code: 无效的绑定码",
 	TimeoutCode:                              "request timeout, please try again later: 请求超时, 请稍后再试",
+	PermissonNotAllowed:                      "permission not allowed: 没有操作权限",
 
 	InvalidMinerID:          "invalid miner id:miner id错误",
 	InvalidAddress:          "invalid owner/worker address: owner/worker 地址错误",

@@ -171,6 +171,8 @@ func RegisterRouterWithJWT(router *gin.Engine, cfg config.Config) {
 	container.GET("/deployment/logs", GetDeploymentLogsHandler)
 	container.GET("/deployment/event", GetDeploymentEventsHandler)
 	container.GET("/deployment/domains", GetDeploymentDomainHandler)
+	container.POST("/deployment/domain/add", AddDeploymentDomainHandler)
+	container.POST("/deployment/domain/del", DeleteDeploymentDomainHandler)
 	container.GET("/deployment/shell", GetDeploymentShellHandler)
 
 	//signature
