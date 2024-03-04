@@ -14,7 +14,7 @@ import (
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 )
 
-const maxPageSize = 500
+const maxPageSize = 100
 
 const (
 	DeviceStatusOffline  = "offline"
