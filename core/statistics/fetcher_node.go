@@ -157,11 +157,11 @@ func ToDeviceInfo(ctx context.Context, node types.NodeInfo) *model.DeviceInfo {
 	}
 
 	switch node.Status {
-	case 0:
+	case types.NodeOffline:
 		deviceInfo.DeviceStatus = DeviceStatusOffline
 		deviceInfo.DeviceID = node.NodeID
 		deviceInfo.DeviceStatusCode = DeviceStatusCodeOffline
-	case 1, 2:
+	case types.NodeServicing, types.NodeNatSymmetric:
 		deviceInfo.DeviceStatusCode = DeviceStatusCodeOnline
 		deviceInfo.DeviceStatus = DeviceStatusOnline
 	default:
