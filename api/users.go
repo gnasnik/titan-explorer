@@ -332,7 +332,7 @@ func DeviceBindingHandler(c *gin.Context) {
 	}
 
 	if sign.Signature != "" {
-		c.JSON(http.StatusOK, respErrorCode(errors.DeviceBound, c))
+		c.JSON(http.StatusOK, respErrorCode(errors.TokenHasBeenUsed, c))
 		return
 	}
 
@@ -354,7 +354,7 @@ func DeviceBindingHandler(c *gin.Context) {
 	}
 
 	if deviceInfo == nil {
-		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
 		return
 	}
 

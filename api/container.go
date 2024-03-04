@@ -383,7 +383,7 @@ func AddDeploymentDomainHandler(c *gin.Context) {
 	}
 
 	if resp.Deployments[0].Owner != username {
-		c.JSON(http.StatusOK, respErrorCode(errors.PermissonNotAllowed, c))
+		c.JSON(http.StatusOK, respErrorCode(errors.PermissionNotAllowed, c))
 		return
 	}
 	//
@@ -432,7 +432,7 @@ func DeleteDeploymentDomainHandler(c *gin.Context) {
 	}
 
 	if resp.Deployments[0].Owner != username {
-		c.JSON(http.StatusOK, respErrorCode(errors.PermissonNotAllowed, c))
+		c.JSON(http.StatusOK, respErrorCode(errors.PermissionNotAllowed, c))
 		return
 	}
 
