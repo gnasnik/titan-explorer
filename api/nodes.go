@@ -766,11 +766,17 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		switch key {
 		case "epoch":
 			out[key] = struct {
-				Token      string  `json:"token"`
+				Token string `json:"token"`
+			}{
+				Token: "TTN0",
+			}
+		case "info":
+			out[key] = struct {
+				Status     int64   `json:"status"`
 				IncomeIncr float64 `json:"income_incr"`
 			}{
-				Token:      "TTN0",
 				IncomeIncr: deviceInfo.IncomeIncr,
+				Status:     deviceInfo.DeviceStatusCode,
 			}
 		case "account":
 			out[key] = queryAccountInfo(c.Request.Context(), deviceInfo.DeviceID, deviceInfo.UserID)
