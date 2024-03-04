@@ -66,7 +66,7 @@ var ErrMap = map[int]string{
 	InvalidParams:                            "invalid params:参数有误",
 	UserNotFound:                             "user not found:用户不存在",
 	InvalidPassword:                          "invalid password:密码错误",
-	InternalServer:                           "internal server error:服务器错误",
+	InternalServer:                           "Server Busy:服务器繁忙，请稍后再试",
 	NoSchedulerFound:                         "no scheduler found:没有可用的调度器",
 	DeviceExists:                             "device already exists:设备已存在",
 	DeviceNotExists:                          "device not exists:设备不存在",
