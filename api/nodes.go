@@ -315,9 +315,8 @@ func GetQueryInfoHandler(c *gin.Context) {
 	}
 
 	if total > 0 {
-		maskIPAddress(deviceInfos)
 		c.JSON(http.StatusOK, respJSON(JsonObject{
-			"list":  deviceInfos,
+			"list":  maskIPAddress(deviceInfos),
 			"total": total,
 			"type":  "user_id",
 		}))
@@ -340,10 +339,8 @@ func GetQueryInfoHandler(c *gin.Context) {
 		dao.TranslateIPLocation(c.Request.Context(), deviceInfo, lang)
 	}
 
-	maskIPAddress(deviceInfos)
-
 	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"list":  deviceInfos,
+		"list":  maskIPAddress(deviceInfos),
 		"total": total,
 		"type":  "node_id",
 	}))

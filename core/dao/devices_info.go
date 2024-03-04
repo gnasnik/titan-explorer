@@ -538,14 +538,14 @@ func GetDeviceInfoById(ctx context.Context, deviceId string) model.DeviceInfo {
 	if err != nil {
 		log.Errorf("getDeviceInfo %v", err)
 	}
-	eIp := strings.Split(deviceInfo.ExternalIp, ".")
-	if len(eIp) > 3 {
-		deviceInfo.ExternalIp = eIp[0] + "." + "xxx" + "." + "xxx" + "." + eIp[3]
-	}
-	iIp := strings.Split(deviceInfo.InternalIp, ".")
-	if len(iIp) > 3 {
-		deviceInfo.InternalIp = iIp[0] + "." + "xxx" + "." + "xxx" + "." + iIp[3]
-	}
+	//eIp := strings.Split(deviceInfo.ExternalIp, ".")
+	//if len(eIp) > 3 {
+	//	deviceInfo.ExternalIp = eIp[0] + "." + "xxx" + "." + "xxx" + "." + eIp[3]
+	//}
+	//iIp := strings.Split(deviceInfo.InternalIp, ".")
+	//if len(iIp) > 3 {
+	//	deviceInfo.InternalIp = iIp[0] + "." + "xxx" + "." + "xxx" + "." + iIp[3]
+	//}
 	return deviceInfo
 }
 
