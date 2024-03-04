@@ -787,9 +787,13 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		}
 	}
 
-	response, err = filterResponse(c.Request.Context(), param.NodeID, response)
+	fr, err := filterResponse(c.Request.Context(), param.NodeID, response)
 	if err != nil {
 		log.Errorf("filter response: %v", err)
+	}
+
+	if param.Since > 0 {
+		response = fr
 	}
 
 	for key, val := range response {
