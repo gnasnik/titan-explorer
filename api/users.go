@@ -331,10 +331,10 @@ func DeviceBindingHandler(c *gin.Context) {
 		return
 	}
 
-	if sign.Signature != "" {
-		c.JSON(http.StatusOK, respErrorCode(errors.TokenHasBeenUsed, c))
-		return
-	}
+	//if sign.Signature != "" {
+	//	c.JSON(http.StatusOK, respErrorCode(errors.TokenHasBeenUsed, c))
+	//	return
+	//}
 
 	deviceInfo, err := dao.GetDeviceInfo(c.Request.Context(), params.NodeId)
 	if err == dao.ErrNoRow {
@@ -417,11 +417,20 @@ func DeviceBindingHandler(c *gin.Context) {
 		return
 	}
 
-	err = dao.UpdateSignature(c.Request.Context(), params.Signature, params.NodeId, params.AreaId, params.Hash)
-	if err != nil {
-		log.Errorf("update signature: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-		return
+	if sign.Signature == "" {
+		err = dao.UpdateSignature(c.Request.Context(), params.Signature, params.NodeId, params.AreaId, params.Hash)
+		if err != nil {
+			log.Errorf("update signature: %v", err)
+			c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+			return
+		}
+	} else {
+		err = dao.AddSignature(c.Request.Context(), &params)
+		if err != nil {
+			log.Errorf("add signature: %v", err)
+			c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, respJSON(nil))
