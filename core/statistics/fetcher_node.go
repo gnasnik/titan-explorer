@@ -181,8 +181,6 @@ func sumDailyReward(ctx context.Context, devices []*model.DeviceInfo) error {
 		deviceInfo.DownloadTraffic = deviceInfo.DownloadTraffic - ud.DownstreamTraffic
 		deviceInfo.RetrievalCount = deviceInfo.RetrievalCount - ud.RetrievalCount
 
-		fmt.Println("======>", deviceInfo.CumulativeProfit, "++++", ud.Income)
-
 		updatedDevices = append(updatedDevices, deviceInfoToDailyInfo(deviceInfo))
 	}
 

@@ -746,6 +746,7 @@ func GetDeviceProfileHandler(c *gin.Context) {
 		}
 
 		deviceInfo = device
+		deviceInfo.DeviceRank = 999
 		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
 		if err != nil {
 			log.Errorf("BulkAddDeviceInfo %v", err)

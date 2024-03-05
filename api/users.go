@@ -331,11 +331,6 @@ func DeviceBindingHandler(c *gin.Context) {
 		return
 	}
 
-	//if sign.Signature != "" {
-	//	c.JSON(http.StatusOK, respErrorCode(errors.TokenHasBeenUsed, c))
-	//	return
-	//}
-
 	deviceInfo, err := dao.GetDeviceInfo(c.Request.Context(), params.NodeId)
 	if err == dao.ErrNoRow {
 
@@ -347,6 +342,7 @@ func DeviceBindingHandler(c *gin.Context) {
 		}
 
 		deviceInfo = device
+		deviceInfo.DeviceRank = 999
 		err = dao.BulkAddDeviceInfo(c.Request.Context(), []*model.DeviceInfo{deviceInfo})
 		if err != nil {
 			log.Errorf("BulkAddDeviceInfo %v", err)
@@ -357,12 +353,6 @@ func DeviceBindingHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
 		return
 	}
-
-	//if err != nil {
-	//	log.Errorf("get device info: %v", err)
-	//	c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-	//	return
-	//}
 
 	if deviceInfo.UserID != "" {
 		c.JSON(http.StatusOK, respErrorCode(errors.DeviceBound, c))

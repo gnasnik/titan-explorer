@@ -102,7 +102,7 @@ func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour,
 		return nil, err
 	}
 	if len(out) > 0 {
-		return append24HoursData(out[1:]), err
+		return append24HoursData(out), err
 	}
 	return out, err
 }
