@@ -425,6 +425,7 @@ func DeviceBindingHandler(c *gin.Context) {
 			return
 		}
 	} else {
+		params.Username = sign.Username
 		err = dao.AddSignature(c.Request.Context(), &params)
 		if err != nil {
 			log.Errorf("add signature: %v", err)
