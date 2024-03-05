@@ -101,12 +101,12 @@ func (s *Statistic) runFetchers() error {
 	}
 	wg.Wait()
 
-	s.asyncExecute([]func() error{
-		s.SumDeviceInfoProfit,
-		s.SumAllNodes,
-		s.UpdateDeviceRank,
-		//s.ClaimUserEarning,
-	})
+	//s.asyncExecute([]func() error{
+	//	s.SumDeviceInfoProfit,
+	//	s.SumAllNodes,
+	//	s.UpdateDeviceRank,
+	//	//s.ClaimUserEarning,
+	//})
 
 	return nil
 }

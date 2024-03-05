@@ -21,8 +21,8 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 	}()
 
 	var (
-		upsertDevice       []*model.DeviceInfoHour
-		initialFixedRecord []*model.DeviceInfoHour
+		upsertDevice []*model.DeviceInfoHour
+		//initialFixedRecord []*model.DeviceInfoHour
 	)
 
 	for _, device := range deviceInfo {
@@ -33,6 +33,7 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 				log.Errorf("get device info: %v", err)
 				continue
 			}
+			device.UserID = deviceOrdinaryInfo.UserID
 			deviceInfoHour.UserID = deviceOrdinaryInfo.UserID
 		}
 		deviceInfoHour.RetrievalCount = device.RetrievalCount
@@ -51,26 +52,30 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 		deviceInfoHour.UpdatedAt = time.Now()
 
 		// fixed start record profit greater than 0
-		if device.OnlineTime <= 5 && device.CumulativeProfit > 0 {
-			fixedDeviceHour := deviceInfoHour
-			fixedDeviceHour.HourIncome = 0
-			fixedDeviceHour.OnlineTime = 0
-			if start.Minute() == 0 {
-				fixedDeviceHour.Time = start.Add(1 * time.Minute)
-			} else {
-				fixedDeviceHour.Time = start.Add(-1 * time.Minute)
-			}
-			initialFixedRecord = append(initialFixedRecord, &fixedDeviceHour)
-		}
+		//if device.OnlineTime <= 5 && device.CumulativeProfit > 0 {
+		//	fixedDeviceHour := deviceInfoHour
+		//	fixedDeviceHour.HourIncome = 0
+		//	fixedDeviceHour.OnlineTime = 0
+		//	if start.Minute() == 0 {
+		//		fixedDeviceHour.Time = start.Add(1 * time.Minute)
+		//	} else {
+		//		fixedDeviceHour.Time = start.Add(-1 * time.Minute)
+		//	}
+		//	initialFixedRecord = append(initialFixedRecord, &fixedDeviceHour)
+		//}
 
 		upsertDevice = append(upsertDevice, &deviceInfoHour)
 	}
 
-	upsertDevice = append(initialFixedRecord, upsertDevice...)
+	//upsertDevice = append(initialFixedRecord, upsertDevice...)
 
 	err := dao.BulkUpsertDeviceInfoHours(ctx, upsertDevice)
 	if err != nil {
 		log.Errorf("bulk upsert device info: %v", err)
+	}
+
+	if err := sumDailyReward(ctx, deviceInfo); err != nil {
+		log.Errorf("add device info daily reward: %v", err)
 	}
 
 	if start.Minute() != 0 {
@@ -201,17 +206,17 @@ func (s *Statistic) buildDailyInfos(dataList []map[string]string) ([]*model.Devi
 	return dailyInfos, nil
 }
 
-func (s *Statistic) SumDeviceInfoProfit() error {
+func SumDeviceInfoProfit() error {
 	log.Info("start to sum device info profit")
 	start := time.Now()
 	defer func() {
 		log.Infof("sum device info profit done, cost: %v", time.Since(start))
 	}()
 
-	if err := s.SumDeviceInfoDaily(); err != nil {
-		log.Errorf("sum device info daily: %v", err)
-		return err
-	}
+	//if err := s.SumDeviceInfoDaily(); err != nil {
+	//	log.Errorf("sum device info daily: %v", err)
+	//	return err
+	//}
 
 	updatedDevices := make(map[string]*model.DeviceInfo)
 
@@ -258,19 +263,22 @@ func updateDeviceInfoForTimeRange(updatedDevices map[string]*model.DeviceInfo, s
 	}
 }
 
-func (s *Statistic) SumAllNodes() error {
+func SumAllNodes() error {
 	log.Info("start to sum all nodes")
 	start := time.Now()
 	defer func() {
 		log.Infof("sum all nodes done, cost: %v", time.Since(start))
 	}()
-	fullNodeInfo, err := dao.SumFullNodeInfoFromDeviceInfo(s.ctx)
+
+	ctx := context.Background()
+	fullNodeInfo, err := dao.SumFullNodeInfoFromDeviceInfo(ctx)
 	if err != nil {
 		log.Errorf("count full node: %v", err)
 		return err
 	}
+
 	// todo NextElectionTime
-	systemInfo, err := dao.SumSystemInfo(s.ctx)
+	systemInfo, err := dao.SumSystemInfo(ctx)
 	if err != nil {
 		log.Errorf("sum system info: %v", err)
 		return err
@@ -286,21 +294,21 @@ func (s *Statistic) SumAllNodes() error {
 	fullNodeInfo.Time = time.Now()
 	fullNodeInfo.CreatedAt = time.Now()
 
-	stats, err := dao.CountStorageStats(s.ctx)
+	stats, err := dao.CountStorageStats(ctx)
 	if err != nil {
 		log.Errorf("CountStorageStats: %v", err)
 	}
 	if stats != nil {
 		fullNodeInfo.FBackupsFromTitan = stats.TotalSize
 	} else {
-		sum, err := dao.SumFilStorage(s.ctx)
+		sum, err := dao.SumFilStorage(ctx)
 		if err != nil {
 			log.Errorf("CountStorageStats: %v", err)
 		}
 		fullNodeInfo.FBackupsFromTitan = float64(sum)
 	}
 
-	err = dao.CacheFullNodeInfo(s.ctx, fullNodeInfo)
+	err = dao.CacheFullNodeInfo(ctx, fullNodeInfo)
 	if err != nil {
 		log.Errorf("cache full node info: %v", err)
 		return err
@@ -308,7 +316,7 @@ func (s *Statistic) SumAllNodes() error {
 
 	fTime := fullNodeInfo.Time
 	fullNodeInfo.Time = time.Date(fTime.Year(), fTime.Month(), fTime.Day(), 0, 0, 0, 0, time.Local)
-	if err = dao.UpsertFullNodeInfo(s.ctx, fullNodeInfo); err != nil {
+	if err = dao.UpsertFullNodeInfo(ctx, fullNodeInfo); err != nil {
 		log.Errorf("upsert full node: %v", err)
 		return err
 	}
@@ -316,13 +324,15 @@ func (s *Statistic) SumAllNodes() error {
 	return nil
 }
 
-func (s *Statistic) UpdateDeviceRank() error {
+func UpdateDeviceRank() error {
 	log.Info("start to rank device info")
 	start := time.Now()
 	defer func() {
 		log.Infof("rank device info done, cost: %v", time.Since(start))
 	}()
-	if err := dao.RankDeviceInfo(s.ctx); err != nil {
+
+	ctx := context.Background()
+	if err := dao.RankDeviceInfo(ctx); err != nil {
 		log.Errorf("ranking device info: %v", err)
 		return err
 	}

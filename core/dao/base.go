@@ -71,6 +71,53 @@ type QueryOption struct {
 	Lang       model.Language `json:"-"`
 }
 
+func QueryMaxDeviceDailyInfo(ctx context.Context, deviceIds []string, start, end string) (map[string]*model.DeviceInfoDaily, error) {
+	query := fmt.Sprintf(`
+			select 
+			max(user_id) as user_id, 
+			max(device_id) as device_id, 
+			max(nat_ratio) as nat_ratio, 
+			max(disk_usage) as disk_usage, 
+			max(disk_space) as disk_space, 
+			max(latency) as latency, 
+			max(pkg_loss_ratio) as pkg_loss_ratio, 
+			max(bandwidth_up) as bandwidth_up, 
+			max(bandwidth_down) as bandwidth_down, 
+			max(time) as time, 
+			max(hour_income) as income,
+			max(online_time) as online_time,
+			max(upstream_traffic) as upstream_traffic,
+			max(downstream_traffic) as downstream_traffic,
+			max(retrieval_count) as retrieval_count,
+			max(block_count) as block_count
+			from device_info_hour where device_id in (?) and time >= ? and time < ? GROUP BY device_id`)
+
+	query, args, err := sqlx.In(query, deviceIds, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := DB.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[string]*model.DeviceInfoDaily)
+
+	for rows.Next() {
+		var dailyDevice model.DeviceInfoDaily
+		if err := rows.StructScan(&dailyDevice); err != nil {
+			log.Errorf("struct scan: %v", err)
+			continue
+		}
+
+		out[dailyDevice.DeviceID] = &dailyDevice
+	}
+
+	return out, nil
+}
+
 func GetQueryDataList(sqlClause string, args ...interface{}) ([]map[string]string, error) {
 	rows, err := DB.Query(sqlClause, args...)
 	if err != nil {

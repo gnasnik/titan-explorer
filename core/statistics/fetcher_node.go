@@ -2,10 +2,14 @@ package statistics
 
 import (
 	"context"
+	"fmt"
 	"github.com/Filecoin-Titan/titan/api/types"
 	"github.com/gnasnik/titan-explorer/core/geo"
 	"github.com/gnasnik/titan-explorer/pkg/formatter"
+	"github.com/golang-module/carbon/v2"
 	"github.com/oschwald/geoip2-golang"
+	errs "github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"net"
 	"strconv"
 	"time"
@@ -96,25 +100,46 @@ loop:
 	log.Infof("handling %d/%d nodes, online: %d offline: %d", total, resp.Total, len(onlineNodes), len(offlineNodes))
 
 	n.Push(ctx, func() error {
-		err := dao.BulkUpsertDeviceInfo(ctx, onlineNodes)
-		if err != nil {
-			log.Errorf("bulk upsert device info: %v", err)
+		if len(onlineNodes) > 0 {
+			err := dao.BulkUpsertDeviceInfo(ctx, onlineNodes)
+			if err != nil {
+				log.Errorf("bulk upsert device info: %v", err)
+			}
+
+			if err = addDeviceInfoHours(ctx, onlineNodes); err != nil {
+				log.Errorf("add device info hours: %v", err)
+			}
+
 		}
 
-		if err = addDeviceInfoHours(ctx, onlineNodes); err != nil {
-			log.Errorf("add device info hours: %v", err)
+		if len(offlineNodes) > 0 {
+			err = dao.BulkAddDeviceInfo(ctx, offlineNodes)
+			if err != nil {
+				log.Errorf("bulk add device info: %v", err)
+			}
 		}
 
-		err = dao.BulkAddDeviceInfo(ctx, offlineNodes)
-		if err != nil {
-			log.Errorf("bulk add device info: %v", err)
-		}
 		return nil
 	})
 
 	if total < resp.Total {
 		goto loop
 	}
+
+	// finally summary the data
+	n.Push(ctx, func() error {
+		var eg errgroup.Group
+
+		eg.Go(SumDeviceInfoProfit)
+		eg.Go(SumAllNodes)
+		eg.Go(UpdateDeviceRank)
+
+		if err := eg.Wait(); err != nil {
+			log.Errorf("sumary job: %v", err)
+		}
+
+		return err
+	})
 
 	// add inactive node records for statistics
 	//e := dao.GenerateInactiveNodeRecords(context.Background(), start)
@@ -123,6 +148,111 @@ loop:
 	//}
 
 	return nil
+}
+
+func sumDailyReward(ctx context.Context, devices []*model.DeviceInfo) error {
+	// query before today value
+	start := carbon.Parse("2024-03-01").String()
+	end := carbon.Yesterday().EndOfDay().String()
+
+	var deviceIds []string
+	for _, device := range devices {
+		deviceIds = append(deviceIds, device.DeviceID)
+	}
+
+	// query before today device reward
+	maxDeviceInfos, err := dao.QueryMaxDeviceDailyInfo(ctx, deviceIds, start, end)
+	if err != nil {
+		log.Errorf("QueryMaxDeviceDailyInfo: %v", err)
+		return err
+	}
+
+	var updatedDevices []*model.DeviceInfoDaily
+	for _, deviceInfo := range devices {
+		ud, ok := maxDeviceInfos[deviceInfo.DeviceID]
+		if !ok {
+			updatedDevices = append(updatedDevices, deviceInfoToDailyInfo(deviceInfo))
+			continue
+		}
+
+		deviceInfo.CumulativeProfit = deviceInfo.CumulativeProfit - ud.Income
+		deviceInfo.OnlineTime = deviceInfo.OnlineTime - ud.OnlineTime
+		deviceInfo.UploadTraffic = deviceInfo.UploadTraffic - ud.UpstreamTraffic
+		deviceInfo.DownloadTraffic = deviceInfo.DownloadTraffic - ud.DownstreamTraffic
+		deviceInfo.RetrievalCount = deviceInfo.RetrievalCount - ud.RetrievalCount
+
+		fmt.Println("======>", deviceInfo.CumulativeProfit, "++++", ud.Income)
+
+		updatedDevices = append(updatedDevices, deviceInfoToDailyInfo(deviceInfo))
+	}
+
+	// update cumulative profit
+
+	err = dao.BulkUpsertDeviceInfoDaily(context.Background(), updatedDevices)
+	if err != nil {
+		return errs.Wrap(err, "bulk upsert device info daily")
+	}
+
+	return nil
+}
+
+func deviceInfoToDailyInfo(deviceInfo *model.DeviceInfo) *model.DeviceInfoDaily {
+
+	return &model.DeviceInfoDaily{
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		UserID:            deviceInfo.UserID,
+		DeviceID:          deviceInfo.DeviceID,
+		Time:              carbon.Time2Carbon(deviceInfo.UpdatedAt).StartOfDay().AddHours(8).Carbon2Time(),
+		Income:            deviceInfo.CumulativeProfit,
+		OnlineTime:        deviceInfo.OnlineTime,
+		PkgLossRatio:      0, // todo
+		Latency:           0, //todo
+		NatRatio:          0,
+		DiskUsage:         deviceInfo.DiskUsage,
+		DiskSpace:         deviceInfo.DiskSpace,
+		BandwidthUp:       deviceInfo.BandwidthUp,
+		BandwidthDown:     deviceInfo.BandwidthDown,
+		UpstreamTraffic:   deviceInfo.UploadTraffic,
+		DownstreamTraffic: deviceInfo.DownloadTraffic,
+		RetrievalCount:    deviceInfo.RetrievalCount,
+		BlockCount:        0,
+	}
+}
+
+func calculateDailyInfo(ctx context.Context, start, end string) ([]map[string]string, error) {
+	where := fmt.Sprintf("where 1=1", start, end)
+	if start != "" {
+		where += fmt.Sprintf(" and time>='%s'", start)
+	}
+	if end != "" {
+		where += fmt.Sprintf(" and time <'%s'", end)
+	}
+
+	//where := fmt.Sprintf("where time>='%s' and time<='%s'", start, end)
+	var total int64
+	err := dao.DB.GetContext(ctx, &total, fmt.Sprintf(`SELECT count(*) FROM %s %s`, "device_info_hour", where))
+	if err != nil {
+		return nil, err
+	}
+
+	sqlClause := fmt.Sprintf(`select i.user_id, i.device_id, date_format(i.time, '%%Y-%%m-%%d') as date,
+			i.nat_ratio, i.disk_usage, i.disk_space,i.latency, i.pkg_loss_ratio, i.bandwidth_up, i.bandwidth_down,
+			max(i.hour_income) as hour_income,
+			max(i.online_time) as online_time,
+			max(i.upstream_traffic) as upstream_traffic,
+			max(i.downstream_traffic) as downstream_traffic,
+			max(i.retrieval_count) as retrieval_count,
+			max(i.block_count) as block_count
+			from (select * from device_info_hour %s order by id desc limit %d) i
+			group by device_id`, where, total)
+
+	dataList, err := dao.GetQueryDataList(sqlClause)
+	if err != nil {
+		return nil, errs.Wrap(err, "get query data list")
+	}
+
+	return dataList, nil
 }
 
 func ToDeviceInfo(ctx context.Context, node types.NodeInfo) *model.DeviceInfo {
