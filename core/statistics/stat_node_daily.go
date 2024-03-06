@@ -74,7 +74,7 @@ func addDeviceInfoHours(ctx context.Context, deviceInfo []*model.DeviceInfo) err
 		log.Errorf("bulk upsert device info: %v", err)
 	}
 
-	if err := sumDailyReward(ctx, deviceInfo); err != nil {
+	if err := sumDailyReward(ctx, start, deviceInfo); err != nil {
 		log.Errorf("add device info daily reward: %v", err)
 	}
 

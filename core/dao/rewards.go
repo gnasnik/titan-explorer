@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 	"github.com/gnasnik/titan-explorer/pkg/formatter"
@@ -86,7 +87,64 @@ func GetDeviceHourlyIncome(ctx context.Context, nodeId string, option QueryOptio
 	return out, err
 }
 
-func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour, option QueryOption) ([]*DeviceStatistics, error) {
+func GetLatestDeviceStat(ctx context.Context, deviceId string, start string) (DeviceStatistics, error) {
+	var ds DeviceStatistics
+	query := fmt.Sprintf(`select 
+    	hour_income as income, 
+    	upstream_traffic, downstream_traffic, block_count, retrieval_count, 
+    	online_time from device_info_hour where device_id = '%s' and time < '%s' order by time desc limit 1`, deviceId, start)
+
+	err := DB.GetContext(ctx, &ds, query)
+	if err == sql.ErrNoRows {
+		return DeviceStatistics{}, nil
+	}
+
+	if err != nil {
+		return DeviceStatistics{}, err
+	}
+
+	return ds, nil
+}
+
+func GetDeviceInfoHourList(ctx context.Context, cond *model.DeviceInfoHour, option QueryOption) ([]*DeviceStatistics, error) {
+	sqlClause := fmt.Sprintf(`select date_format(time, '%%Y-%%m-%%d %%H') as date, 
+	max(online_time) as online_time,
+	max(hour_income) as income,
+	max(upstream_traffic)  as upstream_traffic, 
+	max(downstream_traffic)  as downstream_traffic,
+	max(block_count)  as block_count,
+	max(retrieval_count) as retrieval_count
+	from %s where device_id='%s' and time>='%s' and time<='%s' group by date order by date`, tableNameDeviceInfoHour, cond.DeviceID, option.StartTime, option.EndTime)
+	var out []*DeviceStatistics
+	err := DB.SelectContext(ctx, &out, sqlClause)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out) > 0 {
+		firstOneInRange, err := GetLatestDeviceStat(ctx, cond.DeviceID, option.StartTime)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ds := range out {
+			tmp := *ds
+			ds.OnlineTime -= firstOneInRange.OnlineTime
+			ds.Income -= firstOneInRange.Income
+			ds.UpstreamTraffic -= firstOneInRange.UpstreamTraffic
+			ds.DownstreamTraffic -= firstOneInRange.DownstreamTraffic
+			ds.BlockCount -= firstOneInRange.BlockCount
+			ds.RetrievalCount -= firstOneInRange.RetrievalCount
+			firstOneInRange = tmp
+		}
+
+		return append24HoursData(out), err
+	}
+
+	return append24HoursData(out), err
+}
+
+func GetDeviceInfoDailyHourListOld(ctx context.Context, cond *model.DeviceInfoHour, option QueryOption) ([]*DeviceStatistics, error) {
 	sqlClause := fmt.Sprintf(`select date_format(time, '%%Y-%%m-%%d %%H') as date, avg(nat_ratio) as nat_ratio, 
 	avg(disk_usage) as disk_usage,avg(disk_space) as disk_space,avg(bandwidth_up) as bandwidth_up,avg(bandwidth_down) as bandwidth_down, avg(latency) as latency, avg(pkg_loss_ratio) as pkg_loss_ratio, 
 	if( (max(online_time) - min(online_time)) > 60,60,(max(online_time) - min(online_time))) as online_time,
@@ -101,6 +159,7 @@ func GetDeviceInfoDailyHourList(ctx context.Context, cond *model.DeviceInfoHour,
 	if err != nil {
 		return nil, err
 	}
+
 	if len(out) > 0 {
 		return append24HoursData(out), err
 	}

@@ -271,22 +271,21 @@ func queryDeviceStatisticHourly(deviceID, startTime, endTime string) []*dao.Devi
 		EndTime:   endTime,
 	}
 	if option.StartTime == "" {
-		option.StartTime = carbon.Now().StartOfHour().SubHours(25).String()
+		option.StartTime = carbon.Now().StartOfHour().SubHours(24).String()
 	}
 	if option.EndTime == "" {
-		option.EndTime = carbon.Now().String()
+		option.EndTime = carbon.Now().EndOfDay().String()
 	} else {
-		end, _ := time.Parse(formatter.TimeFormatDateOnly, endTime)
-		end = end.Add(1 * time.Hour).Add(-time.Second)
-		option.EndTime = end.Format(formatter.TimeFormatDatetime)
+		option.EndTime = carbon.Parse(endTime).EndOfDay().String()
 	}
 
 	condition := &model.DeviceInfoHour{
 		DeviceID: deviceID,
 	}
-	list, err := dao.GetDeviceInfoDailyHourList(context.Background(), condition, option)
+
+	list, err := dao.GetDeviceInfoHourList(context.Background(), condition, option)
 	if err != nil {
-		log.Errorf("database GetDeviceInfoDailyHourList: %v", err)
+		log.Errorf("database GetDeviceInfoHourList: %v", err)
 		return nil
 	}
 
@@ -881,7 +880,7 @@ func queryHourlyIncome(ctx context.Context, nodeId string) interface{} {
 
 	list, err := dao.GetDeviceHourlyIncome(context.Background(), nodeId, option)
 	if err != nil {
-		log.Errorf("database GetDeviceInfoDailyHourList: %v", err)
+		log.Errorf("database GetDeviceInfoHourList: %v", err)
 		return nil
 	}
 

@@ -150,7 +150,7 @@ loop:
 	return nil
 }
 
-func sumDailyReward(ctx context.Context, devices []*model.DeviceInfo) error {
+func sumDailyReward(ctx context.Context, sumTime time.Time, devices []*model.DeviceInfo) error {
 	// query before today value
 	start := carbon.Parse("2024-03-01").String()
 	end := carbon.Yesterday().EndOfDay().String()
@@ -169,6 +169,7 @@ func sumDailyReward(ctx context.Context, devices []*model.DeviceInfo) error {
 
 	var updatedDevices []*model.DeviceInfoDaily
 	for _, deviceInfo := range devices {
+		deviceInfo.UpdatedAt = sumTime
 		ud, ok := maxDeviceInfos[deviceInfo.DeviceID]
 		if !ok {
 			updatedDevices = append(updatedDevices, deviceInfoToDailyInfo(deviceInfo))
