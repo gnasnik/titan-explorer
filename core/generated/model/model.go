@@ -265,3 +265,97 @@ type UserL1Reward struct {
 	Reward    float64   `json:"reward" db:"reward"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
+
+type TotalUserStats struct {
+	TotalRewards         float64 `json:"total_rewards" db:"total_rewards"`
+	TotalNodeRewards     float64 `json:"total_node_rewards" db:"total_node_rewards"`
+	TotalReferralRewards float64 `json:"total_referral_rewards" db:"total_referral_rewards"`
+	TotalUsers           int64   `json:"total_users" db:"total_users"`
+}
+
+type TotalNodeStats struct {
+	EdgeRewards      float64 `json:"edge_rewards" db:"edge_rewards"`
+	CandidateRewards float64 `json:"candidate_rewards" db:"candidate_rewards"`
+	// nodes
+	OnlineNodes       int64 `json:"online_nodes" db:"online_nodes"`
+	OnlineCandidates  int64 `json:"online_candidates" db:"online_candidates"`
+	OnlineEdges       int64 `json:"online_edges" db:"online_edges"`
+	OfflineNodes      int64 `json:"offline_nodes" db:"offline_nodes"`
+	OfflineCandidates int64 `json:"offline_candidates" db:"offline_candidates"`
+	OfflineEdges      int64 `json:"offline_edges" db:"offline_edges"`
+	// ip
+	TotalIPs   int64 `json:"total_ips" db:"total_ips"`
+	OnlineIPs  int64 `json:"online_ips" db:"online_ips"`
+	OfflineIPs int64 `json:"offline_ips" db:"offline_ips"`
+	// cli
+	OnlineVPSCLINodes  int64 `json:"online_vps_cli_nodes" db:"online_vps_cli_nodes"`
+	OnlineWinCLINodes  int64 `json:"online_win_cli_nodes" db:"online_win_cli_nodes"`
+	OnlineMacCLINodes  int64 `json:"online_mac_cli_nodes" db:"online_mac_cli_nodes"`
+	OfflineVPSCLINodes int64 `json:"offline_vps_cli_nodes" db:"offline_vps_cli_nodes"`
+	OfflineWinCLINodes int64 `json:"offline_win_cli_nodes" db:"offline_win_cli_nodes"`
+	OfflineMacCLINodes int64 `json:"offline_mac_cli_nodes" db:"offline_mac_cli_nodes"`
+	// client
+	OnlineWinNodes  int64 `json:"online_win_nodes" db:"online_win_nodes"`
+	OnlineMacNodes  int64 `json:"online_mac_nodes" db:"online_mac_nodes"`
+	OnlineAppNodes  int64 `json:"online_app_nodes" db:"online_app_nodes"`
+	OfflineWinNodes int64 `json:"offline_win_nodes" db:"online_win_nodes"`
+	OfflineMacNodes int64 `json:"offline_mac_nodes" db:"online_mac_nodes"`
+	OfflineAppNodes int64 `json:"offline_app_nodes" db:"online_app_nodes"`
+	// storage
+	TitanStorage     float64 `json:"titan_disk_space" db:"titan_disk_space"`
+	TitanStorageUsed float64 `json:"titan_disk_usage" db:"titan_disk_usage"`
+}
+
+type TotalAssetStats struct {
+	// download
+	DownloadCount           int64 `json:"download_count" db:"download_count"`
+	DownloadSize            int64 `json:"download_size" db:"download_size"`
+	SuccessfulDownloadCount int64 `json:"successful_download_count" db:"successful_download_count"`
+	FailedDownloadCount     int64 `json:"failed_download_count" db:"failed_download_count"`
+	DownloadSpeed           int64 `json:"download_speed" db:"download_speed"`
+
+	// upload
+	UploadCount           int64 `json:"upload_count" db:"upload_count"`
+	UploadSize            int64 `json:"upload_size" db:"upload_size"`
+	SuccessfulUploadCount int64 `json:"successful_upload_count" db:"successful_upload_count"`
+	FailedUploadCount     int64 `json:"failed_upload_count" db:"failed_upload_count"`
+	UploadSpeed           int64 `json:"upload_speed" db:"upload_speed"`
+}
+
+type NodeIPHistory struct {
+	NodeId     string `json:"node_id" db:"node_id"`
+	ExternalIP string `json:"external_ip" db:"external_ip"`
+	Date       string `json:"date" db:"date"`
+}
+
+type AreaConfig struct {
+	AreaId string `json:"area_id" db:"area_id"`
+	NameCn string `json:"name_cn" db:"name_cn"`
+	NameEn string `json:"name_en" db:"name_en"`
+}
+
+type QualitiesNode struct {
+	NodeId                 string  `json:"node_id" db:"node_id"`
+	CacheCount             int64   `db:"cache_count" json:"cache_count"`
+	RetrievalCount         int64   `db:"retrieval_count" json:"retrieval_count"`
+	AssetSucceededCount    int64   `db:"asset_succeeded_count" json:"asset_succeeded_count"`
+	AssetFailedCount       int64   `db:"asset_failed_count" json:"asset_failed_count"`
+	RetrieveSucceededCount int64   `db:"retrieve_succeeded_count" json:"retrieve_succeeded_count"`
+	RetrieveFailedCount    int64   `db:"retrieve_failed_count" json:"retrieve_failed_count"`
+	BandwidthUp            float64 `db:"bandwidth_up" json:"bandwidth_up"`
+	BandwidthDown          float64 `db:"bandwidth_down" json:"bandwidth_down"`
+}
+
+type WorkerdNode struct {
+	NodeId                string `db:"node_id" json:"node_id"`
+	ProjectCount          int64  `db:"project_count" json:"project_count"`
+	ProjectSucceededCount int64  `db:"project_succeeded_count" json:"project_succeeded_count"`
+	ProjectFailedCount    int64  `db:"project_failed_count" json:"project_failed_count"`
+}
+
+type IPNodeCount struct {
+	ExternalIP      string `json:"external_ip" db:"external_ip"`
+	Area            string `json:"area"  db:"area_id"`
+	OnlineNodeCount int64  `json:"online_node_count"  db:"online_node_count"`
+	TotalNodeCount  int64  `json:"total_node_count"  db:"total_node_count"`
+}

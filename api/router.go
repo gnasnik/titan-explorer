@@ -96,8 +96,6 @@ func RegisterRouterWithJWT(router *gin.Engine, cfg config.Config) {
 	apiV2.GET("/get_diagnosis_hours", GetDeviceDiagnosisHourHandler)
 	apiV2.GET("/get_cache_hours", GetCacheHourHandler)
 	apiV2.GET("/get_cache_days", GetCacheDaysHandler)
-	//apiV2.GET("/get_applications", GetApplicationsHandler)
-	apiV2.GET("/get_storage_stats", ListStorageStats)
 
 	// node daily count
 	apiV2.GET("/get_nodes_days", GetDiskDaysHandler)
@@ -196,6 +194,20 @@ func RegisterRouterWithJWT(router *gin.Engine, cfg config.Config) {
 	admin.POST("/batch/address", BatchAddressSetHandler)
 	admin.GET("/batch/address", BatchAddressListHandler)
 	admin.DELETE("/batch/address", BatchAddressDelHandler)
+
+	// dashboards
+	admin.GET("/areas", GetAreasHandler)
+	admin.GET("/total_stats", GetTotalStatsHandler)
+	admin.GET("/ip_changed_records", GetNodeIPChangedRecordsHandler)
+	admin.GET("/asset_records", GetAssetRecordsHandler)
+	admin.GET("/successful_replicas", GetSuccessfulReplicasHandler)
+	admin.GET("/failed_replicas", GetFailedReplicasHandler)
+	admin.GET("/workerd_nodes", GetWorkerdNodesHandler)
+	admin.GET("/qualities_nodes", GetQualitiesNodesHandler)
+	admin.GET("/project/overview", GetProjectOverviewHandler)
+	admin.GET("/project/info", GetProjectInfoHandler)
+	admin.GET("/ip_records", GetIPRecordsHandler)
+
 	// storage
 	storage := apiV1.Group("/storage")
 	storage.Use(gin.Logger())

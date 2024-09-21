@@ -300,41 +300,48 @@ func ToDeviceInfoHour(device *model.DeviceInfo, t time.Time) *model.DeviceInfoHo
 
 func ToDeviceInfo(node types.NodeInfo, areaId string) *model.DeviceInfo {
 	deviceInfo := model.DeviceInfo{
-		DeviceID:         node.NodeID,
-		DeviceName:       node.NodeName,
-		DiskSpace:        formatter.ToFixed(node.DiskSpace, 2),
-		DiskUsage:        formatter.ToFixed(node.DiskUsage, 2),
-		TitanDiskSpace:   formatter.ToFixed(node.AvailableDiskSpace, 2),
-		TitanDiskUsage:   formatter.ToFixed(node.TitanDiskUsage, 2),
-		ActiveStatus:     1,
-		OnlineTime:       float64(node.OnlineDuration),
-		BandwidthUp:      float64(node.BandwidthUp),
-		BandwidthDown:    float64(node.BandwidthDown),
-		CpuUsage:         formatter.ToFixed(node.CPUUsage, 2),
-		CpuCores:         int64(node.CPUCores),
-		CpuInfo:          node.CPUInfo,
-		Memory:           node.Memory,
-		MemoryUsage:      formatter.ToFixed(node.MemoryUsage, 2),
-		UploadTraffic:    float64(node.UploadTraffic),
-		DownloadTraffic:  float64(node.DownloadTraffic),
-		ExternalIp:       node.ExternalIP,
-		InternalIp:       node.InternalIP,
-		IoSystem:         node.IoSystem,
-		SystemVersion:    node.SystemVersion,
-		MacLocation:      node.MacLocation,
-		DiskType:         node.DiskType,
-		CumulativeProfit: node.Profit,
-		NodeType:         int64(node.Type),
-		CacheCount:       node.AssetCount,
-		RetrievalCount:   node.RetrieveCount,
-		NATType:          node.NATType,
-		UpdatedAt:        node.LastSeen,
-		BoundAt:          node.FirstTime,
-		IncomeIncr:       node.IncomeIncr,
-		AreaID:           areaId,
-		LastSeen:         node.LastSeen,
-		IsTestNode:       node.IsTestNode,
-		AppType:          getAppType(node.SystemVersion, node.CPUInfo),
+		DeviceID:               node.NodeID,
+		DeviceName:             node.NodeName,
+		DiskSpace:              formatter.ToFixed(node.DiskSpace, 2),
+		DiskUsage:              formatter.ToFixed(node.DiskUsage, 2),
+		TitanDiskSpace:         formatter.ToFixed(node.AvailableDiskSpace, 2),
+		TitanDiskUsage:         formatter.ToFixed(node.TitanDiskUsage, 2),
+		ActiveStatus:           1,
+		OnlineTime:             float64(node.OnlineDuration),
+		BandwidthUp:            float64(node.BandwidthUp),
+		BandwidthDown:          float64(node.BandwidthDown),
+		CpuUsage:               formatter.ToFixed(node.CPUUsage, 2),
+		CpuCores:               int64(node.CPUCores),
+		CpuInfo:                node.CPUInfo,
+		Memory:                 node.Memory,
+		MemoryUsage:            formatter.ToFixed(node.MemoryUsage, 2),
+		UploadTraffic:          float64(node.UploadTraffic),
+		DownloadTraffic:        float64(node.DownloadTraffic),
+		ExternalIp:             node.ExternalIP,
+		InternalIp:             node.InternalIP,
+		IoSystem:               node.IoSystem,
+		SystemVersion:          node.SystemVersion,
+		MacLocation:            node.MacLocation,
+		DiskType:               node.DiskType,
+		CumulativeProfit:       node.Profit,
+		NodeType:               int64(node.Type),
+		CacheCount:             node.AssetCount,
+		RetrievalCount:         node.RetrieveCount,
+		NATType:                node.NATType,
+		UpdatedAt:              node.LastSeen,
+		BoundAt:                node.FirstTime,
+		IncomeIncr:             node.IncomeIncr,
+		AreaID:                 areaId,
+		LastSeen:               node.LastSeen,
+		IsTestNode:             node.IsTestNode,
+		AppType:                getAppType(node.SystemVersion, node.CPUInfo),
+		AssetSucceededCount:    node.AssetSucceededCount,
+		AssetFailedCount:       node.AssetFailedCount,
+		RetrieveSucceededCount: node.RetrieveSucceededCount,
+		RetrieveFailedCount:    node.RetrieveFailedCount,
+		ProjectCount:           node.ProjectCount,
+		ProjectSucceededCount:  node.ProjectSucceededCount,
+		ProjectFailedCount:     node.ProjectFailedCount,
 	}
 
 	switch node.Status {
@@ -356,7 +363,11 @@ func ToDeviceInfo(node types.NodeInfo, areaId string) *model.DeviceInfo {
 }
 
 func getAppType(systemVersion string, cpuInfo string) int64 {
-	if strings.Contains(systemVersion, "windows") || strings.Contains(systemVersion, "mac") {
+	if strings.Contains(systemVersion, "mac") {
+		return 3
+	}
+
+	if strings.Contains(systemVersion, "windows") {
 		return 2
 	}
 

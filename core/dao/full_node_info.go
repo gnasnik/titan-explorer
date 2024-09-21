@@ -19,15 +19,15 @@ const (
 
 func UpsertFullNodeInfo(ctx context.Context, fullNodeInfo *model.FullNodeInfo) error {
 	_, err := DB.NamedExecContext(ctx, fmt.Sprintf(
-		`INSERT INTO %s (t_node_online_ratio, t_average_replica, t_upstream_file_count, validator_count, online_validator_count, candidate_count, online_candidate_count, edge_count, online_edge_count, total_storage, titan_disk_space, titan_disk_usage, storage_used, total_upstream_bandwidth, 
-                total_downstream_bandwidth, total_carfile, total_carfile_size, retrieval_count, total_node_count,online_node_count, next_election_time,  f_backups_from_titan, cpu_cores, memory, ip_count, time, created_at) 
-		VALUES (:t_node_online_ratio, :t_average_replica, :t_upstream_file_count, :validator_count, :online_validator_count, :candidate_count, :online_candidate_count, :edge_count, :online_edge_count, :total_storage, :storage_used,  :titan_disk_space, :titan_disk_usage,
-		    :total_upstream_bandwidth, :total_downstream_bandwidth, :total_carfile, :total_carfile_size, :retrieval_count, :total_node_count, :online_node_count, :next_election_time, :f_backups_from_titan, :cpu_cores, :memory, :ip_count, :time, :created_at) 
-		 ON DUPLICATE KEY UPDATE t_node_online_ratio = VALUES(t_node_online_ratio), t_average_replica = VALUES(t_average_replica), t_upstream_file_count = VALUES(t_upstream_file_count), validator_count = VALUES(validator_count), 
-		online_validator_count = VALUES(online_validator_count), candidate_count = VALUES(candidate_count), online_candidate_count = VALUES(online_candidate_count),  online_edge_count = VALUES(online_edge_count),
-		edge_count = VALUES(edge_count), total_storage = VALUES(total_storage), storage_used = VALUES(storage_used),  titan_disk_space  = VALUES(titan_disk_space), titan_disk_usage = VALUES(titan_disk_usage), total_upstream_bandwidth = VALUES(total_upstream_bandwidth),
-		total_downstream_bandwidth = VALUES(total_downstream_bandwidth), total_carfile = VALUES(total_carfile), f_backups_from_titan=VALUES(f_backups_from_titan), cpu_cores = VALUES(cpu_cores), memory = VALUES(memory), ip_count = VALUES(ip_count),
-		total_carfile_size = VALUES(total_carfile_size), retrieval_count = VALUES(retrieval_count), total_node_count = VALUES(total_node_count), online_node_count = VALUES(online_node_count)`, tableNameFullNodeInfo),
+		`INSERT INTO %s (t_node_online_ratio, t_average_replica, t_upstream_file_count, candidate_count, online_candidate_count, edge_count, online_edge_count, total_storage, titan_disk_space, titan_disk_usage, storage_used, total_upstream_bandwidth, 
+                total_downstream_bandwidth, total_carfile, total_carfile_size, retrieval_count, total_node_count,online_node_count,  f_backups_from_titan, cpu_cores, memory, ip_count, time, created_at) 
+		VALUES (:t_node_online_ratio, :t_average_replica, :t_upstream_file_count, :candidate_count, :online_candidate_count, :edge_count, :online_edge_count, :total_storage, :storage_used, :titan_disk_space, :titan_disk_usage,
+		    :total_upstream_bandwidth, :total_downstream_bandwidth, :total_carfile, :total_carfile_size, :retrieval_count, :total_node_count, :online_node_count, :f_backups_from_titan, :cpu_cores, :memory, :ip_count, :time, :created_at) 
+		 ON DUPLICATE KEY UPDATE t_node_online_ratio = VALUES(t_node_online_ratio), t_average_replica = VALUES(t_average_replica), t_upstream_file_count = VALUES(t_upstream_file_count), candidate_count = VALUES(candidate_count), 
+		online_candidate_count = VALUES(online_candidate_count),  online_edge_count = VALUES(online_edge_count),edge_count = VALUES(edge_count), total_storage = VALUES(total_storage), storage_used = VALUES(storage_used),  
+		titan_disk_space  = VALUES(titan_disk_space), titan_disk_usage = VALUES(titan_disk_usage), total_upstream_bandwidth = VALUES(total_upstream_bandwidth), total_downstream_bandwidth = VALUES(total_downstream_bandwidth), 
+		total_carfile = VALUES(total_carfile), f_backups_from_titan=VALUES(f_backups_from_titan), cpu_cores = VALUES(cpu_cores), memory = VALUES(memory), ip_count = VALUES(ip_count), total_carfile_size = VALUES(total_carfile_size), 
+		retrieval_count = VALUES(retrieval_count), total_node_count = VALUES(total_node_count), online_node_count = VALUES(online_node_count)`, tableNameFullNodeInfo),
 		fullNodeInfo)
 	return err
 }
@@ -122,8 +122,8 @@ func GetNodesDaysList(ctx context.Context, option QueryOption) ([]*FullNodeDaysI
 	sqlClause := fmt.Sprintf(`select date_format(time, '%%Y-%%m-%%d') as date, 
 	total_node_count, 
 	online_node_count, 
-	(validator_count+candidate_count) as l1_count,
-	(online_validator_count+online_candidate_count) as online_l1_count,
+	candidate_count as l1_count,
+	online_candidate_count as online_l1_count,
 	edge_count as l2_count,  
 	online_edge_count as online_l2_count,  
 	f_node_count as sp_node_count,

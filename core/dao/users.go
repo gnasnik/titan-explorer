@@ -303,3 +303,15 @@ func UpdateUserTotalSize(ctx context.Context, un string, ts int64) error {
 
 	return nil
 }
+
+func GetTotalUserStats(ctx context.Context) (*model.TotalUserStats, error) {
+	query := `select sum(reward + referral_reward) as total_rewards, sum(reward) as total_node_rewards, sum(referral_reward) as total_referral_rewards, count(username) as total_users from users;`
+
+	var out model.TotalUserStats
+	err := DB.GetContext(ctx, &out, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}

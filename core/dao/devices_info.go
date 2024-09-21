@@ -163,6 +163,14 @@ func GetDeviceInfoList(ctx context.Context, cond *model.DeviceInfo, option Query
 		where += ` AND node_type = ?`
 		args = append(args, cond.NodeType)
 	}
+	if cond.AreaID != "" {
+		where += ` AND area_id = ?`
+		args = append(args, cond.AreaID)
+	}
+	if cond.ExternalIp != "" {
+		where += ` AND external_ip = ?`
+		args = append(args, cond.ExternalIp)
+	}
 
 	if option.Order != "" && option.OrderField != "" {
 		where += fmt.Sprintf(` ORDER BY %s %s`, option.OrderField, option.Order)
@@ -452,13 +460,14 @@ func upsertDeviceInfoStatement() string {
                 	device_id, node_type, device_name, user_id, system_version,  active_status,network_info, external_ip, internal_ip, ip_location, last_seen, app_type,
                 	ip_country, ip_province, ip_city, latitude, longitude, mac_location, cpu_usage, cpu_cores, cpu_info, memory_usage, memory, disk_usage, disk_space, titan_disk_space, titan_disk_usage,
                 	device_status, device_status_code, io_system, online_time, today_online_time, today_profit, yesterday_profit, seven_days_profit, month_profit, area_id,
-                	cumulative_profit, bandwidth_up, bandwidth_down,download_traffic,upload_traffic, created_at, updated_at, bound_at,cache_count,retrieval_count, nat_type, income_incr, is_test_node
-                	)
+                	cumulative_profit, bandwidth_up, bandwidth_down,download_traffic,upload_traffic, created_at, updated_at, bound_at,cache_count,retrieval_count, nat_type, income_incr, is_test_node,
+                	asset_succeeded_count, asset_failed_count, retrieve_succeeded_count, retrieve_failed_count, project_count, project_succeeded_count, project_failed_count)
 				VALUES (
 					:device_id, :node_type, :device_name, :user_id,  :system_version, :active_status,:network_info, :external_ip, :internal_ip, :ip_location, :last_seen, :app_type,
 					:ip_country, :ip_province, :ip_city, :latitude, :longitude, :mac_location,:cpu_usage, :cpu_cores, :cpu_info, :memory_usage, :memory, :disk_usage, :disk_space, :titan_disk_space, :titan_disk_usage,
 					:device_status, :device_status_code, :io_system, :online_time, :today_online_time, :today_profit,:yesterday_profit, :seven_days_profit, :month_profit, :area_id,
-					:cumulative_profit, :bandwidth_up, :bandwidth_down,:download_traffic,:upload_traffic, now(), now(),:bound_at,:cache_count,:retrieval_count, :nat_type, :income_incr, :is_test_node
+					:cumulative_profit, :bandwidth_up, :bandwidth_down,:download_traffic,:upload_traffic, now(), now(),:bound_at,:cache_count,:retrieval_count, :nat_type, :income_incr, :is_test_node,
+				    :asset_succeeded_count, :asset_failed_count, :retrieve_succeeded_count, :retrieve_failed_count, :project_count, :project_succeeded_count, :project_failed_count
 				)`, tableNameDeviceInfo,
 	)
 	updateStatement := ` ON DUPLICATE KEY UPDATE node_type = VALUES(node_type), active_status = VALUES(active_status),
@@ -469,7 +478,8 @@ func upsertDeviceInfoStatement() string {
 				disk_usage = VALUES(disk_usage), disk_space = VALUES(disk_space), titan_disk_usage = VALUES(titan_disk_usage), titan_disk_space = VALUES(titan_disk_space), 
 			    device_status = VALUES(device_status), device_status_code = VALUES(device_status_code) ,io_system = VALUES(io_system), bandwidth_up = VALUES(bandwidth_up),
 				bandwidth_down = VALUES(bandwidth_down),download_traffic = VALUES(download_traffic),upload_traffic = VALUES(upload_traffic), updated_at = now(),bound_at = VALUES(bound_at),cache_count = VALUES(cache_count),retrieval_count = VALUES(retrieval_count),
-				is_test_node = VALUES(is_test_node)`
+				is_test_node = VALUES(is_test_node), asset_succeeded_count = VALUES(asset_succeeded_count), asset_failed_count = VALUES(asset_failed_count), retrieve_succeeded_count = VALUES(retrieve_succeeded_count), retrieve_failed_count = VALUES(retrieve_failed_count), 
+				project_count = VALUES(project_count), project_succeeded_count = VALUES(project_succeeded_count), project_failed_count = VALUES(project_failed_count)`
 	return insertStatement + updateStatement
 }
 
@@ -479,13 +489,11 @@ func SumFullNodeInfoFromDeviceInfo(ctx context.Context) (*model.FullNodeInfo, er
 			 SUM(IF(node_type = 1, 1, 0)) AS edge_count, 
 			 SUM(IF(node_type = 1 AND device_status_code = 1, 1, 0)) AS online_edge_count, 
 			 SUM(IF(node_type = 2 AND device_status_code = 1, 1, 0)) AS online_candidate_count, 
-			 SUM(IF(node_type = 3 AND device_status_code = 1, 1, 0)) AS online_validator_count, 
-       SUM(IF(node_type = 2, 1, 0)) AS candidate_count,
+       		 SUM(IF(node_type = 2, 1, 0)) AS candidate_count,
 			 ROUND(SUM(cache_count),0) as t_upstream_file_count,
-       count(device_status = 'online' or null) as online_node_count,
-       SUM(IF(node_type = 3, 1, 0)) AS validator_count, 
-			 ROUND(count(device_status = 'online' or null)/count( device_id )*100,2) AS t_node_online_ratio,
-       ROUND(SUM( disk_space),4) AS total_storage, 
+       		 SUM(if(device_status_code = 1, 1, 0)) as online_node_count,
+			 ROUND( SUM(if(device_status_code = 1, 1, 0))/count( device_id )*100,2) AS t_node_online_ratio,
+       		 ROUND(SUM( disk_space),4) AS total_storage, 
 			 ROUND(SUM( disk_usage*disk_space/100),4) AS storage_used, 
 			 ROUND(SUM( titan_disk_space),2) AS titan_disk_space, 
 			 ROUND(SUM( titan_disk_usage),2) AS titan_disk_usage, 
@@ -494,7 +502,7 @@ func SumFullNodeInfoFromDeviceInfo(ctx context.Context) (*model.FullNodeInfo, er
 			 ROUND(SUM(if(device_status_code = 1, cpu_cores, 0)),0) as cpu_cores,
 			 ROUND(SUM(if(device_status_code = 1, memory, 0)),0) as memory,
 			 COUNT(distinct external_ip) as ip_count
-		FROM %s where active_status = 1;`, tableNameDeviceInfo)
+		     FROM %s`, tableNameDeviceInfo)
 
 	var out model.FullNodeInfo
 	if err := DB.QueryRowxContext(ctx, queryStatement).StructScan(&out); err != nil {
@@ -762,4 +770,231 @@ func GetCountryCount(ctx context.Context) (int64, error) {
 	}
 
 	return out, nil
+}
+
+func GetTotalNodeStats(ctx context.Context, areaId string) (*model.TotalNodeStats, error) {
+	query := `select 
+	sum(if (node_type = 1 , cumulative_profit, 0)) as edge_rewards, 
+	sum(if (node_type = 2 , cumulative_profit, 0)) as candidate_rewards,
+	sum(if (device_status_code = 1, 1, 0)) as online_nodes,
+	COUNT(DISTINCT external_ip) as total_ips,
+	COUNT(DISTINCT CASE WHEN device_status_code = 1 THEN external_ip END) as online_ips,
+	sum(if(app_type = 1 and device_status_code = 1, 1, 0)) AS online_app_nodes,
+    sum(if(app_type = 2 and device_status_code = 1, 1, 0)) AS online_win_nodes,
+	sum(if(app_type = 3 and device_status_code = 1, 1, 0)) AS online_mac_nodes,
+	sum(titan_disk_space) as titan_disk_space,
+	sum(titan_disk_usage) as titan_disk_usage
+	from device_info`
+
+	if areaId != "" {
+		query += fmt.Sprintf(` where area_id = '%s'`, areaId)
+	}
+
+	var out model.TotalNodeStats
+	err := DB.GetContext(ctx, &out, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func GetNodeIPChangedRecords(ctx context.Context, id string, option QueryOption) (int64, []*model.NodeIPHistory, error) {
+	args := []interface{}{id}
+
+	subQuery := `select device_id as node_id, external_ip, date(time) as date from device_info_daily WHERE device_id = ? and external_ip <> ''`
+
+	countQuery := fmt.Sprintf(`SELECT count(1) FROM (%s) t`, subQuery+` group by external_ip`)
+
+	var total int64
+	err := DB.GetContext(ctx, &total, countQuery, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 10
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	pagination := ` limit ? offset ?`
+	args = append(args, limit, offset)
+
+	query := fmt.Sprintf(`select * from (%s) t `, subQuery+` group by external_ip`) + pagination
+	var out []*model.NodeIPHistory
+
+	err = DB.SelectContext(ctx, &out, query, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, err
+}
+
+func GetWorkerdNodes(ctx context.Context, areaId, nodeId string, option QueryOption) (int64, []*model.WorkerdNode, error) {
+	var (
+		where = `WHERE project_count > 0 `
+		args  []interface{}
+	)
+
+	if areaId != "" {
+		where += ` AND area_id = ?`
+		args = append(args, areaId)
+	}
+
+	if nodeId != "" {
+		where += ` AND device_id = ?`
+		args = append(args, nodeId)
+	}
+
+	if option.Order != "" && option.OrderField != "" {
+		where += fmt.Sprintf(` ORDER BY %s %s`, option.OrderField, option.Order)
+	} else {
+		where += fmt.Sprintf(` ORDER BY project_count DESC`)
+	}
+
+	countQuery := `SELECT count(1) FROM device_info ` + where
+
+	var total int64
+	err := DB.GetContext(ctx, &total, countQuery, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 10
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	where += ` limit ? offset ?`
+	args = append(args, limit, offset)
+
+	var out []*model.WorkerdNode
+	query := `SELECT device_id as node_id, project_count, project_succeeded_count, project_failed_count FROM device_info ` + where
+
+	err = DB.SelectContext(ctx, &out, query, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, err
+}
+
+func GetQualitiesNodes(ctx context.Context, areaId, nodeId string, option QueryOption) (int64, []*model.QualitiesNode, error) {
+	var (
+		where = `WHERE 1=1 `
+		args  []interface{}
+	)
+
+	if areaId != "" {
+		where += ` AND area_id = ?`
+		args = append(args, areaId)
+	}
+
+	if nodeId != "" {
+		where += ` AND device_id = ?`
+		args = append(args, nodeId)
+	}
+
+	if option.Order != "" && option.OrderField != "" {
+		where += fmt.Sprintf(` ORDER BY %s %s`, option.OrderField, option.Order)
+	} else {
+		where += fmt.Sprintf(` ORDER BY cache_count DESC`)
+	}
+
+	countQuery := `SELECT count(1) FROM device_info ` + where
+
+	var total int64
+	err := DB.GetContext(ctx, &total, countQuery, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 10
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	where += ` limit ? offset ?`
+	args = append(args, limit, offset)
+
+	var out []*model.QualitiesNode
+	query := `SELECT device_id as node_id, cache_count, asset_succeeded_count, asset_failed_count,
+       bandwidth_up, retrieval_count, retrieve_succeeded_count, retrieve_failed_count, bandwidth_down
+       FROM device_info ` + where
+
+	err = DB.SelectContext(ctx, &out, query, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, err
+}
+
+func GetIPNodeCount(ctx context.Context, ip, areaId string, option QueryOption) (int64, []*model.IPNodeCount, error) {
+	var (
+		where = `WHERE external_ip <> '' `
+		args  []interface{}
+	)
+
+	if ip != "" {
+		where += ` AND external_ip = ?`
+		args = append(args, ip)
+	}
+
+	if areaId != "" {
+		where += ` AND area_id = ?`
+		args = append(args, areaId)
+	}
+
+	subQuery := `select DISTINCT(external_ip), area_id, sum(if(device_status_code = 1, 1,0)) as online_node_count, count(device_id) as total_node_count from device_info `
+
+	countQuery := fmt.Sprintf(`SELECT count(1) FROM (%s) t`, subQuery+where+` group by external_ip`)
+
+	if option.Order != "" && option.OrderField != "" {
+		where += fmt.Sprintf(` ORDER BY %s %s`, option.OrderField, option.Order)
+	} else {
+		where += fmt.Sprintf(` ORDER BY online_node_count DESC`)
+	}
+
+	var total int64
+	err := DB.GetContext(ctx, &total, countQuery, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 10
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	where += ` limit ? offset ?`
+	args = append(args, limit, offset)
+
+	query := fmt.Sprintf(`select * from (%s) t `, subQuery+` group by external_ip`) + where
+
+	var out []*model.IPNodeCount
+
+	err = DB.SelectContext(ctx, &out, query, args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, err
 }

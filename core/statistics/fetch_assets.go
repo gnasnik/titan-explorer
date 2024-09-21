@@ -8,7 +8,6 @@ import (
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 	"github.com/golang-module/carbon/v2"
 	errs "github.com/pkg/errors"
-	"sort"
 	"time"
 )
 
@@ -34,10 +33,10 @@ func newAssertFetcher() Fetcher {
 
 // Fetch fetches asset information.
 func (a AssertFetcher) Fetch(ctx context.Context, scheduler *Scheduler) error {
-	log.Info("Start to fetch assert info")
+	log.Info("Start to fetch assets")
 	start := time.Now()
 	defer func() {
-		log.Infof("Fetch assert files, cost: %v", time.Since(start))
+		log.Infof("fetch assets cost: %v", time.Since(start))
 	}()
 
 	latest, err := dao.GetLatestAsset(ctx)
@@ -60,19 +59,19 @@ func (a AssertFetcher) Fetch(ctx context.Context, scheduler *Scheduler) error {
 	endTime = carbon.Now().EndOfDay().StdTime()
 
 Loop:
-	assertsRes, err := scheduler.Api.GetReplicaEvents(ctx, startTime, endTime, limit, offset)
+	assetRecords, err := scheduler.Api.GetAssetRecordsByDateRange(ctx, offset, limit, startTime, endTime)
 	if err != nil {
-		log.Errorf("client api GetReplicaEvents: %v", err)
+		log.Errorf("client api GetAssetRecordsByDateRange: %v", err)
 		return err
 	}
 
-	offset += len(assertsRes.ReplicaEvents)
+	offset += len(assetRecords.List)
 
-	if len(assertsRes.ReplicaEvents) == 1 && assertsRes.ReplicaEvents[0].Cid == latest.Cid {
+	if len(assetRecords.List) == 1 && assetRecords.List[0].CID == latest.Cid {
 		return nil
 	}
 
-	assets, err := toAssets(assertsRes.ReplicaEvents)
+	assets, err := toAssets(assetRecords.List, scheduler.AreaId)
 	if err != nil {
 		log.Errorf("toAssets: %v", err)
 		return err
@@ -87,66 +86,38 @@ Loop:
 		log.Errorf("create user assets: %v", err)
 	}
 
-	if assertsRes.Total > offset {
+	if assetRecords.Total > int64(offset) {
 		goto Loop
 	}
 
-	stats, err := dao.CountAssets(ctx)
-	if err != nil {
-		log.Errorf("count assets err: %v", err)
-		return err
-	}
-
-	if len(stats) == 0 {
-		return nil
-	}
-
-	sort.Slice(stats, func(i, j int) bool {
-		return stats[i].TotalSize > stats[j].TotalSize
-	})
-
-	for index, current := range stats {
-		stats[index].Rank = int64(index) + 1
-
-		storages, _, err := dao.ListStorageStats(ctx, current.ProjectId, dao.QueryOption{
-			Page:      1,
-			PageSize:  1,
-			StartTime: carbon.Now().SubHours(24).String(),
-			EndTime:   carbon.Now().String(),
-		})
-		if err != nil {
-			log.Errorf("ListStorageStats: %v", err)
-			continue
-		}
-
-		if len(storages) == 0 {
-			continue
-		}
-
-		current.StorageChange24H = current.TotalSize - storages[0].TotalSize
-		current.StorageChangePercentage24H = float64(current.TotalSize-storages[0].TotalSize) / float64(storages[0].TotalSize)
-	}
-
-	return dao.AddStorageStats(ctx, stats)
+	return nil
 }
 
 // toAssets converts a slice of ReplicaEventInfo to a slice of Asset.
-func toAssets(in []*types.ReplicaEventInfo) ([]*model.Asset, error) {
+func toAssets(in []*types.AssetRecord, areaId string) ([]*model.Asset, error) {
 	var out []*model.Asset
 	for _, r := range in {
 
-		if types.AssetSource(r.Source) == types.AssetSourceAWS || types.AssetSource(r.Source) == types.AssetSourceMinio {
-			continue
-		}
-
 		out = append(out, &model.Asset{
-			NodeID:     r.NodeID,
-			Event:      int64(r.Event),
-			Cid:        r.Cid,
-			Hash:       r.Hash,
-			TotalSize:  r.TotalSize,
-			Expiration: r.Expiration,
-			EndTime:    r.EndTime,
+			Cid:                   r.CID,
+			Hash:                  r.Hash,
+			TotalSize:             r.TotalSize,
+			TotalBlocks:           r.TotalBlocks,
+			Expiration:            r.Expiration,
+			CreatedTime:           r.CreatedTime,
+			EndTime:               r.EndTime,
+			UserId:                r.Owner,
+			NeedCandidateReplicas: r.NeedCandidateReplicas,
+			NeedEdgeReplica:       r.NeedEdgeReplica,
+			NeedBandwidth:         r.NeedBandwidth,
+			AreaId:                areaId,
+			State:                 r.State,
+			Note:                  r.Note,
+			Source:                r.Source,
+			RetryCount:            r.RetryCount,
+			ReplenishReplicas:     r.ReplenishReplicas,
+			FailedCount:           int64(r.FailedCount),
+			SucceededCount:        int64(r.SucceededCount),
 		})
 	}
 	return out, nil

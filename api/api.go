@@ -49,7 +49,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	//	router.Use(Cors())
+	router.Use(Cors())
 
 	// logging request body
 	router.Use(RequestLoggerMiddleware())

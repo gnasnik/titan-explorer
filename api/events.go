@@ -76,7 +76,7 @@ func GetCacheListHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"list":  resp.ReplicaEvents,
+		"list":  resp.List,
 		"total": resp.Total,
 	}))
 	return
@@ -2303,41 +2303,41 @@ func GetKeyListHandler(c *gin.Context) {
 }
 
 func GetRetrievalListHandler(c *gin.Context) {
-	nodeId := c.Query("device_id")
-	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	page, _ := strconv.Atoi(c.Query("page"))
+	//nodeId := c.Query("device_id")
+	//pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	//page, _ := strconv.Atoi(c.Query("page"))
+	//
+	//if nodeId == "" {
+	//	c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
+	//	return
+	//}
+	//
+	//deviceInfo, err := dao.GetDeviceInfoByID(c.Request.Context(), nodeId)
+	//if err != nil {
+	//	c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
+	//	return
+	//}
+	//
+	//if deviceInfo == nil {
+	//	c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
+	//	return
+	//}
 
-	if nodeId == "" {
-		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
-		return
-	}
-
-	deviceInfo, err := dao.GetDeviceInfoByID(c.Request.Context(), nodeId)
-	if err != nil {
-		c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
-		return
-	}
-
-	if deviceInfo == nil {
-		c.JSON(http.StatusOK, respErrorCode(errors.DeviceNotExists, c))
-		return
-	}
-
-	schedulerClient, err := getSchedulerClient(c.Request.Context(), deviceInfo.IpLocation)
-	if err != nil {
-		c.JSON(http.StatusOK, respErrorCode(errors.NoSchedulerFound, c))
-		return
-	}
-	resp, err := schedulerClient.GetRetrieveEventRecords(c.Request.Context(), nodeId, pageSize, (page-1)*pageSize)
-	if err != nil {
-		log.Errorf("api GetRetrieveEventRecords: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-		return
-	}
+	//schedulerClient, err := getSchedulerClient(c.Request.Context(), deviceInfo.IpLocation)
+	//if err != nil {
+	//	c.JSON(http.StatusOK, respErrorCode(errors.NoSchedulerFound, c))
+	//	return
+	//}
+	//resp, err := schedulerClient.GetRetrieveEventRecords(c.Request.Context(), nodeId, pageSize, (page-1)*pageSize)
+	//if err != nil {
+	//	log.Errorf("api GetRetrieveEventRecords: %v", err)
+	//	c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	//	return
+	//}
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"list":  resp.RetrieveEventInfos,
-		"total": resp.Total,
+		"list":  nil,
+		"total": 0,
 	}))
 }
 

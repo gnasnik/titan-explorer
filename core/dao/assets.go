@@ -2,22 +2,22 @@ package dao
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 )
 
 const (
-	tableNameAsset   = "assets"
-	tableNameProject = "projects"
+	tableNameAsset = "assets"
 )
 
 func AddAssets(ctx context.Context, assets []*model.Asset) error {
 	_, err := DB.NamedExecContext(ctx, fmt.Sprintf(
-		`INSERT INTO %s ( node_id, event, cid, hash, total_size, end_time, expiration, user_id, type, name, created_at, updated_at)
-			VALUES ( :node_id, :event, :cid, :hash, :total_size, :end_time, :expiration, :user_id, :type, :name, :created_at, :updated_at) 
-			ON DUPLICATE KEY UPDATE  event = VALUES(event), end_time = VALUES(end_time), expiration = VALUES(expiration), user_id = VALUES(user_id), type = VALUES(type), name = VALUES(name);`, tableNameAsset,
+		`INSERT INTO %s ( node_id, backup_result, cid, hash, total_size, end_time, expiration, user_id, edge_replicas, candidate_replicas, total_blocks, created_time, area_id, state, note, bandwidth, source, retry_count, replenish_replicas, failed_count, succeeded_count)
+			VALUES ( :node_id, :backup_result, :cid, :hash, :total_size, :end_time, :expiration, :user_id, :edge_replicas, :candidate_replicas, :total_blocks, :created_time, :area_id, :state, :note, :bandwidth, :source, :retry_count, :replenish_replicas, :failed_count, :succeeded_count) 
+			ON DUPLICATE KEY UPDATE  backup_result = VALUES(backup_result), end_time = VALUES(end_time), expiration = VALUES(expiration), user_id = VALUES(user_id), edge_replicas = VALUES(edge_replicas), candidate_replicas = VALUES(candidate_replicas), 
+			total_blocks = values(total_blocks), area_id = values(area_id), state = values(state), note = values(note), bandwidth = values(bandwidth), source = values(source), retry_count = values(retry_count), replenish_replicas = values(replenish_replicas), 
+			failed_count = values(failed_count), succeeded_count = values(succeeded_count);`, tableNameAsset,
 	), assets)
 	return err
 }
@@ -28,9 +28,9 @@ func UpdateAssetPath(ctx context.Context, cid string, path string) error {
 	return err
 }
 
-func UpdateAssetEvent(ctx context.Context, cid string, event int) error {
+func UpdateAssetBackupResult(ctx context.Context, cid string, backupResult int) error {
 	_, err := DB.ExecContext(ctx, fmt.Sprintf(
-		`UPDATE %s SET event = ? where cid = ?`, tableNameAsset), event, cid)
+		`UPDATE %s SET backup_result = ? where cid = ?`, tableNameAsset), backupResult, cid)
 	return err
 }
 
@@ -44,10 +44,20 @@ func GetLatestAsset(ctx context.Context) (*model.Asset, error) {
 	return &asset, err
 }
 
+func CountAssets(ctx context.Context) (int64, error) {
+	var count int64
+	err := DB.GetContext(ctx, &count, fmt.Sprintf(
+		`select count(cid) from %s`, tableNameAsset))
+	if err != nil {
+		return 0, err
+	}
+	return count, err
+}
+
 func GetAssetsByEmptyPath(ctx context.Context) ([]*model.Asset, int64, error) {
 	var out []*model.Asset
 	err := DB.SelectContext(ctx, &out, fmt.Sprintf(
-		`SELECT * FROM %s WHERE event = 1 AND path = ''`, tableNameAsset,
+		`SELECT * FROM %s WHERE backup_result = 1 AND path = ''`, tableNameAsset,
 	))
 
 	if err != nil {
@@ -56,7 +66,7 @@ func GetAssetsByEmptyPath(ctx context.Context) ([]*model.Asset, int64, error) {
 
 	var total int64
 	err = DB.GetContext(ctx, &total, fmt.Sprintf(
-		`SELECT count(*) FROM %s WHERE event = 1 AND path = ''`, tableNameAsset))
+		`SELECT count(*) FROM %s WHERE backup_result = 1 AND path = ''`, tableNameAsset))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,108 +84,6 @@ func GetAssetByCID(ctx context.Context, cid string) (*model.Asset, error) {
 	return &asset, err
 }
 
-func CountAssets(ctx context.Context) ([]*model.StorageStats, error) {
-	queryStatement := fmt.Sprintf(`select t.project_id, t.project_name, sum(t.total_size) as total_size, t.time, sum(t.gas) as gas, sum(t.pledge) as pledge, max(t.expiration) as expiration from (
-		select a.project_id, s.name as project_name, sum(a.total_size) as total_size, DATE_FORMAT(now(),'%%Y-%%m-%%d %%H:%%i') as time, max(f.gas) as gas, max(f.pledge) as pledge, 
-		max(f.end_time) as expiration  from %s a inner join %s s on a.project_id = s.id left join %s f on a.path = f.path 
-		where a.path <> '' and a.event = 1  group by a.project_id, f.message_cid) t group by t.project_id`, tableNameAsset, tableNameProject, tableNameFilStorage)
-
-	var out []*model.StorageStats
-	if err := DB.SelectContext(ctx, &out, queryStatement); err != nil {
-		return nil, err
-	}
-
-	userProviderInProject, err := getUserProviderInProject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for i, item := range out {
-		uip, ok := userProviderInProject[item.ProjectId]
-		if !ok {
-			continue
-		}
-		out[i].UserCount = uip.UserCount
-		out[i].ProviderCount = uip.ProviderCount
-	}
-
-	providerInProject, err := getProviderLocationInProject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for i, item := range out {
-		uip, ok := providerInProject[item.ProjectId]
-		if !ok {
-			continue
-		}
-		out[i].Locations = uip.Locations
-	}
-
-	return out, nil
-}
-
-func getProviderLocationInProject(ctx context.Context) (map[int64]*model.StorageStats, error) {
-	out := make(map[int64]*model.StorageStats)
-	queryStatement := fmt.Sprintf(`select a.project_id, sp.location as locations from %s a left join %s f on a.path = f.path  
-    left join %s sp on f.provider = sp.provider_id where a.path <> '' group by a.project_id, locations`, tableNameAsset, tableNameFilStorage, tableNameStorageProvider)
-
-	rows, err := DB.Queryx(queryStatement)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			id       int64
-			location sql.NullString
-		)
-		if err := rows.Scan(&id, &location); err != nil {
-			return nil, err
-		}
-		if _, ok := out[id]; !ok {
-			out[id] = &model.StorageStats{
-				ProjectId: id,
-				Locations: location.String,
-			}
-			continue
-		}
-
-		if out[id].Locations == "" {
-			out[id].Locations = location.String
-		} else {
-			if location.String != "" {
-				out[id].Locations += "," + location.String
-			}
-		}
-	}
-
-	return out, nil
-}
-
-func getUserProviderInProject(ctx context.Context) (map[int64]*model.StorageStats, error) {
-	out := make(map[int64]*model.StorageStats)
-	queryStatement := fmt.Sprintf(`select a.project_id, count(DISTINCT a.user_id) as user_count, count(DISTINCT f.provider) as provider_count from %s a 
-    left join %s f on a.path = f.path where a.path <> '' group by a.project_id`, tableNameAsset, tableNameFilStorage)
-
-	rows, err := DB.Queryx(queryStatement)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var s model.StorageStats
-		if err := rows.StructScan(&s); err != nil {
-			return nil, err
-		}
-		out[s.ProjectId] = &s
-	}
-
-	return out, nil
-}
-
 func AllAssets(ctx context.Context) ([]*model.Asset, error) {
 	var assets []*model.Asset
 	err := DB.SelectContext(ctx, &assets, fmt.Sprintf("SELECT * FROM %s", tableNameAsset))
@@ -183,4 +91,44 @@ func AllAssets(ctx context.Context) ([]*model.Asset, error) {
 		return nil, err
 	}
 	return assets, nil
+}
+
+func GetAssetsList(ctx context.Context, cid string, option QueryOption) (int64, []*model.Asset, error) {
+	var args []interface{}
+	where := `WHERE 1 = 1`
+
+	if cid != "" {
+		where += fmt.Sprintf(" AND cid = '%s'", cid)
+	}
+
+	if option.Order != "" && option.OrderField != "" {
+		where += fmt.Sprintf(` ORDER BY %s %s`, option.OrderField, option.Order)
+	}
+
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 50
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	var total int64
+	var out []*model.Asset
+
+	err := DB.GetContext(ctx, &total, fmt.Sprintf(
+		`SELECT count(*) FROM %s %s`, tableNameAsset, where,
+	), args...)
+	if err != nil {
+		return 0, nil, err
+	}
+	err = DB.SelectContext(ctx, &out, fmt.Sprintf(
+		`SELECT * FROM %s %s ORDER BY created_time DESC LIMIT %d OFFSET %d`, tableNameAsset, where, limit, offset,
+	), args...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, err
 }

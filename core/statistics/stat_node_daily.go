@@ -2,8 +2,6 @@ package statistics
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/gnasnik/titan-explorer/config"
 	"github.com/gnasnik/titan-explorer/core/dao"
@@ -581,36 +579,24 @@ func SumAllNodes() error {
 		return err
 	}
 
-	// todo NextElectionTime
-	systemInfo, err := dao.SumSystemInfo(ctx)
+	assetCount, err := dao.CountAssets(ctx)
 	if err != nil {
-		log.Errorf("sum system info: %v", err)
-		return err
+		log.Errorf("count assets: %v", err)
 	}
-	AssetCount := config.GNodesInfo.AssetCount
-	if AssetCount == 0 {
-		AssetCount = 1
+
+	if assetCount == 0 {
+		assetCount = 1
 	}
-	fullNodeInfo.TAverageReplica = formatter.ToFixed(float64(fullNodeInfo.TUpstreamFileCount)/float64(AssetCount), 2)
-	fullNodeInfo.TotalCarfile = systemInfo.CarFileCount
-	fullNodeInfo.RetrievalCount = systemInfo.DownloadCount
-	fullNodeInfo.NextElectionTime = systemInfo.NextElectionTime
+
+	fullNodeInfo.TAverageReplica = formatter.ToFixed(float64(fullNodeInfo.TUpstreamFileCount)/float64(assetCount), 2)
 	fullNodeInfo.Time = time.Now()
 	fullNodeInfo.CreatedAt = time.Now()
 
-	stats, err := dao.CountStorageStats(ctx)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	sum, err := dao.SumFilStorage(ctx)
+	if err != nil {
 		log.Errorf("CountStorageStats: %v", err)
 	}
-	if stats != nil {
-		fullNodeInfo.FBackupsFromTitan = stats.TotalSize
-	} else {
-		sum, err := dao.SumFilStorage(ctx)
-		if err != nil {
-			log.Errorf("CountStorageStats: %v", err)
-		}
-		fullNodeInfo.FBackupsFromTitan = float64(sum)
-	}
+	fullNodeInfo.FBackupsFromTitan = float64(sum)
 
 	err = dao.CacheFullNodeInfo(ctx, fullNodeInfo)
 	if err != nil {
@@ -620,6 +606,7 @@ func SumAllNodes() error {
 
 	fTime := fullNodeInfo.Time
 	fullNodeInfo.Time = time.Date(fTime.Year(), fTime.Month(), fTime.Day(), 0, 0, 0, 0, time.Local)
+
 	if err = dao.UpsertFullNodeInfo(ctx, fullNodeInfo); err != nil {
 		log.Errorf("upsert full node: %v", err)
 		return err

@@ -177,9 +177,9 @@ func BackupResultHandler(c *gin.Context) {
 			continue
 		}
 
-		err := dao.UpdateAssetEvent(c.Request.Context(), assets.Cid, int(assets.Event))
+		err := dao.UpdateAssetBackupResult(c.Request.Context(), assets.Cid, int(assets.BackupResult))
 		if err != nil {
-			log.Errorf("update assets event: %v", err)
+			log.Errorf("update assets backup result: %v", err)
 		}
 	}
 

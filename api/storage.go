@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -16,7 +14,6 @@ import (
 	"github.com/gnasnik/titan-explorer/core/generated/model"
 	"github.com/gnasnik/titan-explorer/pkg/formatter"
 	"github.com/golang-module/carbon/v2"
-	errs "github.com/pkg/errors"
 )
 
 type (
@@ -126,62 +123,6 @@ func QueryStorageDaily(ctx context.Context, userId, startTime, endTime string) [
 	}
 
 	return list
-}
-
-func ListStorageStats(c *gin.Context) {
-	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	page, _ := strconv.Atoi(c.Query("page"))
-	order := c.Query("order")
-	orderField := c.Query("order_field")
-	option := dao.QueryOption{
-		Page:       page,
-		PageSize:   pageSize,
-		Order:      order,
-		OrderField: orderField,
-		StartTime:  carbon.Now().SubMinutes(5).String(),
-		EndTime:    carbon.Now().String(),
-	}
-
-	lastSs, err := dao.GetLastStorageStats(c.Request.Context())
-	if err == nil && lastSs != nil {
-		option.StartTime = lastSs.Time
-	}
-
-	list, count, err := dao.ListStorageStats(c.Request.Context(), -1, option)
-	if errs.Is(err, sql.ErrNoRows) {
-		c.JSON(http.StatusOK, respJSON(JsonObject{
-			"storage": model.StorageSummary{},
-			"list":    nil,
-			"total":   0,
-		}))
-		return
-	}
-
-	if err != nil {
-		log.Errorf("ListStorageStats: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-		return
-	}
-
-	var summary model.StorageSummary
-	stats, err := dao.CountStorageStats(c.Request.Context())
-	if err == sql.ErrNoRows {
-		return
-	}
-
-	if err != nil {
-		log.Errorf("CountStorageStats: %v", err)
-	}
-
-	if stats != nil {
-		summary = *stats
-	}
-
-	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"storage": summary,
-		"list":    list,
-		"total":   count,
-	}))
 }
 
 // GetStorageHourV2Handler 获取存储每小时的信息

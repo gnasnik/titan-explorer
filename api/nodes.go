@@ -548,9 +548,19 @@ func GetDeviceInfoHandler(c *gin.Context) {
 	nodeTypeStr := c.Query("node_type")
 	lang := model.Language(c.GetHeader("Lang"))
 	notBound := c.Query("not_bound")
+	info.AreaID = c.Query("area_id")
+	info.ExternalIp = c.Query("ip")
 
 	if auth {
-		info.UserID = username
+		user, err := dao.GetUserByUsername(c.Request.Context(), username)
+		if err != nil {
+			c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+			return
+		}
+
+		if model.UserRole(user.Role) != model.UserRoleAdmin {
+			info.UserID = username
+		}
 	}
 
 	if nodeTypeStr != "" {
@@ -1328,6 +1338,30 @@ func GetDeviceOnlineIncentivesHandler(c *gin.Context) {
 	list, total, err := dao.GetDeviceOnlineIncentiveList(c.Request.Context(), deviceId, option)
 	if err != nil {
 		log.Errorf("GetDeviceOnlineIncentiveList: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"list":  list,
+		"total": total,
+	}))
+}
+
+func GetIPRecordsHandler(c *gin.Context) {
+	ip := c.Query("ip")
+	areaId := c.Query("area_id")
+	page, _ := strconv.ParseInt(c.Query("page"), 10, 64)
+	size, _ := strconv.ParseInt(c.Query("page_size"), 10, 64)
+
+	option := dao.QueryOption{
+		Page:     int(page),
+		PageSize: int(size),
+	}
+
+	total, list, err := dao.GetIPNodeCount(c.Request.Context(), ip, areaId, option)
+	if err != nil {
+		log.Errorf("GetIPNodeCount: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
 		return
 	}

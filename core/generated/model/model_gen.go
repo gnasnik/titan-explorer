@@ -146,11 +146,20 @@ type DeviceInfo struct {
 	OnLineRate            float64 `db:"-" json:"online_rate"`
 	LockProfit            float64 `db:"-" json:"lock_profit"`
 	UnLockProfit          float64 `db:"-" json:"unlock_profit"`
-	Mx 					  float64 `db:"-" json:"mx"`
+	Mx                    float64 `db:"-" json:"mx"`
 	PenaltyProfit         float64 `db:"-" json:"penalty_profit"`
+	AssetSucceededCount    int64 `db:"asset_succeeded_count" json:"-"`
+	AssetFailedCount       int64 `db:"asset_failed_count" json:"-"`
+	RetrieveSucceededCount int64 `db:"retrieve_succeeded_count" json:"-"`
+	RetrieveFailedCount    int64 `db:"retrieve_failed_count" json:"-"`
+	ProjectCount           int64 `db:"project_count" json:"-"`
+	ProjectSucceededCount  int64 `db:"project_succeeded_count" json:"-"`
+	ProjectFailedCount     int64 `db:"project_failed_count" json:"-"`
 
 	Location
 }
+
+
 
 type NodesInfo struct {
 	Rank        string  `db:"rank" json:"rank"`
@@ -218,8 +227,6 @@ type FullNodeInfo struct {
 	TUpstreamFileCount       int64     `db:"t_upstream_file_count" json:"t_upstream_file_count"`
 	TAverageReplica          float64   `db:"t_average_replica" json:"t_average_replica"`
 	FBackupsFromTitan        float64   `db:"f_backups_from_titan" json:"f_backups_from_titan"`
-	ValidatorCount           int32     `db:"validator_count" json:"validator_count"`
-	OnlineValidateorCount    int32     `db:"online_validator_count" json:"online_validator_count"`
 	CandidateCount           int32     `db:"candidate_count" json:"candidate_count"`
 	OnlineCandidateCount     int32     `db:"online_candidate_count" json:"online_candidate_count"`
 	EdgeCount                int32     `db:"edge_count" json:"edge_count"`
@@ -234,11 +241,7 @@ type FullNodeInfo struct {
 	TotalCarfile             int64     `db:"total_carfile" json:"total_carfile"`
 	TotalCarfileSize         float64   `db:"total_carfile_size" json:"total_carfile_size"`
 	RetrievalCount           int64     `db:"retrieval_count" json:"retrieval_count"`
-	NextElectionTime         time.Time `db:"next_election_time" json:"next_election_time"`
-	FVMOrderCount            int64     `db:"fvm_order_count" json:"fvm_order_count"`
 	FNodeCount               int64     `db:"f_node_count" json:"f_node_count"`
-	FHigh                    int64     `db:"f_high" json:"f_high"`
-	TNextElectionHigh        int64     `db:"t_next_election_high" json:"t_next_election_high"`
 	Time                     time.Time `db:"time" json:"time"`
 	CPUCores                 int64     `db:"cpu_cores" json:"cpu_cores"`
 	Memory                   int64     `db:"memory" json:"memory"`
@@ -327,7 +330,6 @@ type User struct {
 	ReferrerUserId         string    `db:"referrer_user_id" json:"-"`
 	ReferralCode           string    `db:"referral_code" json:"referral_code"`
 	Reward                 float64   `db:"reward" json:"reward"`
-	L1Reward 			   float64   `db:"l1_reward" json:"l1_reward"`
 	ReferralReward         float64   `db:"referral_reward" json:"referral_reward"`
 	ClosedTestReward       float64   `db:"closed_test_reward" json:"closed_test_reward"`
 	HuygensReward          float64   `db:"huygens_reward" json:"huygens_reward"`
@@ -340,7 +342,7 @@ type User struct {
 	EligibleDeviceCount    int64     `db:"eligible_device_count" json:"eligible_device_count"`
 	FromKolBonusReward     float64   `db:"from_kol_bonus_reward" json:"-"` // Deprecated
 	OnlineIncentiveReward  float64   `db:"online_incentive_reward" json:"online_incentive_reward"`
-	TotalStorageSize 	   int64	 `db:"total_storage_size"`
+	TotalStorageSize       int64     `db:"total_storage_size"`
 	UsedStorageSize        int64     `db:"used_storage_size"`
 	TotalTraffic           int64     `db:"total_traffic"`
 	PeakBandwidth          int64     `db:"peak_bandwidth"`
@@ -354,7 +356,7 @@ type User struct {
 
 type Link struct {
 	ID        int64     `db:"id" json:"id"`
-	UserId    string 	`db:"user_id" json:"user_id"`
+	UserId    string    `db:"user_id" json:"user_id"`
 	UserName  string    `db:"username" json:"username"`
 	Cid       string    `db:"cid" json:"cid"`
 	LongLink  string    `db:"long_link" json:"long_link"`
@@ -362,7 +364,7 @@ type Link struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 	DeletedAt time.Time `db:"deleted_at" json:"deleted_at"`
-	ShortPass string 	`db:"short_pass" json:"short_pass"`
+	ShortPass string    `db:"short_pass" json:"short_pass"`
 	ExpireAt  time.Time `db:"expire_at" json:"expire_at"`
 }
 
@@ -470,22 +472,29 @@ type LotusRespError struct {
 type errorCode int
 
 type Asset struct {
-	ID         int64     `db:"id" json:"id"`
-	NodeID     string    `db:"node_id" json:"node_id"`
-	Event      int64     `db:"event" json:"event"`
-	Cid        string    `db:"cid" json:"cid"`
-	Hash       string    `db:"hash" json:"hash"`
-	TotalSize  int64     `db:"total_size" json:"total_size"`
-	Path       string    `db:"path" json:"path"`
-	EndTime    time.Time `db:"end_time" json:"end_time"`
-	Expiration time.Time `db:"expiration" json:"expiration"`
-	UserId     string    `db:"user_id" json:"user_id"`
-	Type       string    `db:"type" json:"type"`
-	Name       string    `db:"name" json:"name"`
-	ProjectId  int64     `db:"project_id" json:"project_id"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
-	DeletedAt  time.Time `db:"deleted_at" json:"deleted_at"`
+	ID                    int64     `db:"id" json:"id"`
+	NodeID                string    `db:"node_id" json:"node_id"`
+	Cid                   string    `db:"cid" json:"cid"`
+	Hash                  string    `db:"hash" json:"hash"`
+	TotalSize             int64     `db:"total_size" json:"total_size"`
+	TotalBlocks           int64     `db:"total_blocks" json:"total_blocks"`
+	Path                  string    `db:"path" json:"path"`
+	CreatedTime           time.Time `db:"created_time" json:"created_time"`
+	EndTime               time.Time `db:"end_time" json:"end_time"`
+	Expiration            time.Time `db:"expiration" json:"expiration"`
+	UserId                string    `db:"user_id" json:"user_id"`
+	NeedEdgeReplica       int64     `db:"edge_replicas" json:"edge_replicas"`
+	NeedCandidateReplicas int64     `db:"candidate_replicas" json:"candidate_replicas"`
+	AreaId                string    `db:"area_id" json:"area_id"`
+	State                 string    `db:"state" json:"state"`
+	NeedBandwidth         int64     `db:"bandwidth" json:"bandwidth"` // unit:MiB/
+	Note                  string    `db:"note" json:"note"`
+	Source                int64     `db:"source" json:"source"`
+	RetryCount            int64     `db:"retry_count" json:"retry_count"`
+	ReplenishReplicas     int64     `db:"replenish_replicas" json:"replenish_replicas"`
+	BackupResult          int64     `db:"backup_result" json:"backup_result"`
+	FailedCount           int64     `db:"failed_count" json:"failed_count"`
+	SucceededCount        int64     `db:"succeeded_count" json:"succeeded_count"`
 }
 
 type FilStorage struct {
@@ -576,7 +585,7 @@ type Ads struct {
 	IsText      bool      `db:"is_text" json:"is_text"`
 	Weight      int64     `db:"weight" json:"weight"`
 	State       int64     `db:"state" json:"state"`
-	Hits 		int64 	  `db:"hits" json:"hits"`
+	Hits        int64     `db:"hits" json:"hits"`
 	InvalidFrom time.Time `db:"invalid_from" json:"invalid_from"`
 	InvalidTo   time.Time `db:"invalid_to" json:"invalid_to"`
 	CreatedAt   time.Time `db:"created_at" json:"created_at"`
@@ -632,7 +641,7 @@ type DeviceOnlineIncentive struct {
 type UserAsset struct {
 	UserID      string    `db:"user_id"`
 	Hash        string    `db:"hash"`
-	Cid string `db:"cid"`
+	Cid         string    `db:"cid"`
 	AssetName   string    `db:"asset_name"`
 	AssetType   string    `db:"asset_type"`
 	ShareStatus int64     `db:"share_status"`
@@ -641,7 +650,7 @@ type UserAsset struct {
 	TotalSize   int64     `db:"total_size"`
 	Password    string    `db:"password"`
 	// ShortPass 	string 	  `db:"short_pass"`
-	GroupID     int64     `db:"group_id"`
+	GroupID int64 `db:"group_id"`
 }
 
 type AssetGroup struct {
@@ -653,8 +662,8 @@ type AssetGroup struct {
 }
 
 type UserAssetVisitCount struct {
-	Hash  string `db:"hash"`
-	Count int64 `db:"count"`
+	Hash   string `db:"hash"`
+	Count  int64  `db:"count"`
 	UserId string `db:"user_id"`
 }
 
@@ -666,22 +675,22 @@ type UserAssetArea struct {
 }
 
 type TempAsset struct {
-	Hash 			string  `db:"hash"`
-	DownloadCount 	int64 	`db:"download_count"`
-	ShareCount 		int64 	`db:"share_count"`
+	Hash          string `db:"hash"`
+	DownloadCount int64  `db:"download_count"`
+	ShareCount    int64  `db:"share_count"`
 }
 
 type AreaMap struct {
-	ID 		int64 	`db:"id"`
-	AreaEn 	string  `db:"area_en"`
-	AreaCn 	string 	`db:"area_cn"`
+	ID     int64  `db:"id"`
+	AreaEn string `db:"area_en"`
+	AreaCn string `db:"area_cn"`
 }
 
 type AssetStorageHour struct {
-	ID 				int64  	`db:"id"`
-	Hash 			string 	`db:"hash"`
-	TotalTraffic 	int64 	`db:"total_traffic"`
-	PeakBandwidth 	int64 	`db:"peak_bandwidth"`
-	DownloadCount 	int64 	`db:"download_count"`
-	TimeStamp 		int64 	`db:"timestamp"`
+	ID            int64  `db:"id"`
+	Hash          string `db:"hash"`
+	TotalTraffic  int64  `db:"total_traffic"`
+	PeakBandwidth int64  `db:"peak_bandwidth"`
+	DownloadCount int64  `db:"download_count"`
+	TimeStamp     int64  `db:"timestamp"`
 }
